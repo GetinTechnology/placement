@@ -1,0 +1,44 @@
+/* Sidebar */
+.menu {
+    background: #fff;
+    position: fixed;
+    height: 100vh;
+    width: auto;
+    left: 0;
+    top: 0;
+    padding: 10px;
+    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s ease;
+}
+
+/* When sidebar is collapsed */
+.menu.collapsed {
+    width: 60px;
+}
+
+/* Main Content */
+.main {
+    margin-left: 150px;
+    padding: 20px;
+    transition: margin-left 0.3s ease;
+}
+
+/* When sidebar is collapsed, expand main content */
+.main.expanded {
+    margin-left: 80px;
+}
+
+/* Hide text inside sidebar when collapsed */
+.hide-text {
+    display: none;
+}
+
+/* Ensure icons stay aligned */
+.icon {
+    min-width: 24px;
+}
+
+/* Hide button arrow rotation */
+.rotate-arrow {
+    transition: transform 0.3s ease;
+}

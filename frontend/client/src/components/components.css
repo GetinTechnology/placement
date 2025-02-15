@@ -1,0 +1,31 @@
+.header{
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 30px;
+
+}
+
+.header-top{
+    display: flex;
+    align-items: center;
+}
+
+.header-top img{
+    width: 80px;
+}
+.header-top span{
+    color: red;
+}
+.header-bottom button{
+    margin: 0 10px;
+    background-color: transparent;
+    border: 1px solid red;
+    padding:10px 20px;
+    border-radius: 10px;
+    
+}
+.header-bottom button:nth-child(2){
+    background-color: blue;
+    border: none;
+    color: #fff;
+}
