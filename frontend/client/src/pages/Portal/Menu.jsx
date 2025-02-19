@@ -8,6 +8,7 @@ import HelpCenterIcon from '@mui/icons-material/HelpCenter';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
 import './menu.css'
+import { Link } from 'react-router-dom';
 function Menu({ toggleSidebar, isCollapsed }) {
   return (
     <div className="">
@@ -17,22 +18,25 @@ function Menu({ toggleSidebar, isCollapsed }) {
       </div>
       <div className="menu-body">
         <div>
-        <ul>
-          <li><WidgetsIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Test</span></li>
-          <li><GroupIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Respondents</span></li>
-          <li><InsertChartIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Result Database</span></li>
-          <li><SettingsIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>My Account</span></li>
-        </ul>
+          <ul>
+            <li><Link to='/portal'><WidgetsIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Test</span></Link></li>
+            <li><Link to='/respondents'><GroupIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Respondents</span></Link></li>
+            <li><Link to='/result_data_base'><InsertChartIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Result DataBase</span></Link></li>
+            <li><Link to='/account'><SettingsIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>My Account</span></Link></li>
+          </ul>
         </div>
         <div>
-        <ul>
-          <li><HelpCenterIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Help</span></li>
-          <li><MeetingRoomIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Sign Out</span></li>
-          <li onClick={toggleSidebar}>
-            <KeyboardDoubleArrowLeftIcon className="icon rotate-arrow" style={{ transform: isCollapsed ? "rotate(180deg)" : "rotate(0deg)" }} />
-            <span className={isCollapsed ? "hide-text" : ""}>Hide</span>
-          </li>
-        </ul>
+          <div className='menu-body-b'>
+            <ul >
+              <li><HelpCenterIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Help</span></li>
+              <li><MeetingRoomIcon className="icon" /> <span className={isCollapsed ? "hide-text" : ""}>Sign Out</span></li>
+              <li onClick={toggleSidebar}>
+                <KeyboardDoubleArrowLeftIcon className="icon rotate-arrow" style={{ transform: isCollapsed ? "rotate(180deg)" : "rotate(0deg)" }} />
+                <span className={isCollapsed ? "hide-text" : ""}>Hide</span>
+              </li>
+            </ul>
+          </div>
+
         </div>
       </div>
     </div>

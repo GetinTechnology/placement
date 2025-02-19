@@ -1,49 +1,51 @@
-
 from django.contrib.auth import authenticate
 from django.core.mail import send_mail
 from django.conf import settings
 import random
 import string
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import  *
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.authtoken.models import Token
+from .serializers import UserRegistrationSerializer
+from .models import User
 
-@api_view(['POST','GET'])
+
+#  User Registration
+@api_view(['POST'])
+@permission_classes([AllowAny])  
 def register(request):
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        user = serializer.save()
         return Response({"message": "User registered successfully. Please log in."}, status=status.HTTP_201_CREATED)
-    else:
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+
+# User Login (Step 1 - Get Verification Code)
+@api_view(['POST','Get'])
+@permission_classes([AllowAny])  
 def login_view(request):
     email = request.data.get('email')
     password = request.data.get('password')
-    
-    user = authenticate(username=email, password=password)  # Check user credentials
 
-    if user is not None:
-        # Generate a 6-digit verification code
-        verification_code = ''.join(random.choices(string.digits, k=6))
-        user.verification_code = verification_code
-        user.save()
-        
-        # Send verification code via email
-        send_mail(
-            'Your Verification Code',
-            f'Your verification code is: {verification_code}',
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email]
-        )
-        
-        return Response({"message": "Verification code sent to email."}, status=status.HTTP_200_OK)
-    else:
+    user = authenticate(email=email, password=password)  # Authenticate with email
+
+    if user is None:
         return Response({"error": "Invalid email or password."}, status=status.HTTP_400_BAD_REQUEST)
 
+    if not user.is_verified:
+        return Response({"error": "User email is not verified."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Generate or retrieve the authentication token
+    token, created = Token.objects.get_or_create(user=user)
+
+    return Response({"token": token.key, "message": "Login successful"}, status=status.HTTP_200_OK)
+
+# Verify Code and Access Portal (Step 2)
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def verify_code(request):
     email = request.data.get('email')
     code = request.data.get('code')
@@ -52,13 +54,24 @@ def verify_code(request):
         user = User.objects.get(email=email)
 
         if user.verification_code == code:
-            user.is_verified = True
-            user.verification_code = ''  # Clear the code after verification
+            # Clear the verification code after use
+            user.verification_code = ''
             user.save()
-            
-            return Response({"message": "Verification successful. You are now logged in."}, status=status.HTTP_200_OK)
-        else:
-            return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Generate authentication token
+            token, _ = Token.objects.get_or_create(user=user)
+
+            return Response({"message": "Verification successful. You can now access the portal.", "token": token.key}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
 
     except User.DoesNotExist:
         return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Logout (Destroy Token)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])  # Only authenticated users can log out
+def logout_view(request):
+    request.user.auth_token.delete()  # Delete the token
+    return Response({"message": "Logged out successfully."}, status=status.HTTP_200_OK)

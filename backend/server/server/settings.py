@@ -40,9 +40,18 @@ INSTALLED_APPS = [
     'test_portal',
     'rest_framework',
     'corsheaders',
-    'accounts'
+    'accounts',
+     'rest_framework.authtoken'
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -60,6 +69,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React frontend
 ]
 ROOT_URLCONF = 'server.urls'
+
+AUTHENTICATION_BACKENDS = [
+    'accounts.auth_backend.EmailAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Keep default backend as fallback
+]
 
 TEMPLATES = [
     {

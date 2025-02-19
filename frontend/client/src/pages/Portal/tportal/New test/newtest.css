@@ -1,0 +1,40 @@
+.tmain-h{
+    background-color: #fff;
+    padding: 20px;
+}
+.tmain-main{
+    margin-top: 2rem;
+}
+.is{
+    margin-top: 2rem;
+    background-color: #fff;
+    padding: 30px 30px;
+    border-radius:10px ;
+    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+}
+.is>form{
+    display: flex;
+    flex-direction: column;
+}
+.is>form>label{
+    margin: 10px 0;
+    color: gray;
+    font-weight: 600;
+}
+.is>form>input,select{
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    padding: 10px;
+    border-bottom: 1px solid gray;
+}
+.is>form>input:focus{
+    outline: none;
+}
+.cb{
+    background-color: red;
+    border: none;
+    margin-top: 10px;
+    padding: 5px 10px;
+    border-radius:10px ;
+}

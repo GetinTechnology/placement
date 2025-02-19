@@ -1,0 +1,133 @@
+/* Sidebar */
+
+.menu {
+    background: #fff;
+    position: fixed;
+    height: 100vh;
+    width: auto;
+    left: 0;
+    top: 0;
+    padding: 10px;
+    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s ease;
+}
+
+/* When sidebar is collapsed */
+.menu.collapsed {
+    width: 100px;
+}
+
+/* Main Content */
+.main {
+    margin-left: 220px;
+    padding: 20px;
+    transition: margin-left 0.3s ease;
+}
+
+/* When sidebar is collapsed, expand main content */
+.main.expanded {
+    margin-left: 80px;
+}
+
+/* Hide text inside sidebar when collapsed */
+.hide-text {
+    display: none;
+}
+
+/* Ensure icons stay aligned */
+.icon {
+    min-width: 24px;
+}
+
+/* Hide button arrow rotation */
+.rotate-arrow {
+    transition: transform 0.3s ease;
+}
+.t-top{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.t-top button{
+    background-color: red;
+    border: none;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+}
+.filter{
+    background-color: #fff !important;
+    margin-top: 30px !important;
+    padding: 20px;
+    box-shadow: 0 0 5px 5px rgba(128, 128, 128, 0.155);
+    font-weight: 700;
+}
+.fil-1,.fil-2{
+    display: flex;
+    justify-content: space-between;
+}
+
+.t-box{
+    background-color: #fff !important;
+    box-shadow: 0 0 5px 5px rgba(128, 128, 128, 0.155);
+    padding: 20px;
+    margin-top:10px ;
+    position: relative;
+}
+.t-box:hover{
+    box-shadow: 0 0 10px 10px rgba(128, 128, 128, 0.155);
+}
+.t-box::before{
+    content: '';
+    display: inline-block;
+    height: 50px;
+    width: 4px;
+    background-color: red;
+    position: absolute;
+    left: 0;
+    border-radius: 10px;
+}
+.t-box1,.t-box1>div{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.t-box1 button{
+    background-color: transparent;
+    border: 2px solid green;
+}
+.t-box1 span{
+    font-size: 32px;
+    font-weight: 700;
+    color: gray;
+}
+.t-box2{
+    padding: 10px 0 0 0;
+}
+.t-box2>p{
+    color: gray;
+    font-weight: 700;
+}
+.t-box3{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.t-box3 span{
+    color: gray;
+}
+.t-box3 span:first-child{
+    padding: 0 10px 0 0;
+    border-right: 2px solid;
+    margin: 0 10px 0 0;
+}
+.t-box3 button{
+    background-color: transparent;
+    border:  1px solid gray;
+    padding: 10px;
+    border-radius: 10px;
+    
+}
