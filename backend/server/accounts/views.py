@@ -24,7 +24,7 @@ def register(request):
 
 
 # User Login (Step 1 - Get Verification Code)
-@api_view(['POST','Get'])
+@api_view(['POST'])
 @permission_classes([AllowAny])  
 def login_view(request):
     email = request.data.get('email')
@@ -38,10 +38,21 @@ def login_view(request):
     if not user.is_verified:
         return Response({"error": "User email is not verified."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Generate or retrieve the authentication token
-    token, created = Token.objects.get_or_create(user=user)
+    # Generate a 6-digit verification code
+    verification_code = str(random.randint(100000, 999999))
+    user.verification_code = verification_code
+    user.save()
 
-    return Response({"token": token.key, "message": "Login successful"}, status=status.HTTP_200_OK)
+    # Send verification code via email
+    send_mail(
+        "Your Verification Code",
+        f"Your verification code is: {verification_code}",
+        "noreply@example.com",  # Change this to your email sender
+        [email],
+        fail_silently=False,
+    )
+
+    return Response({"message": "Verification code sent to your email."}, status=status.HTTP_200_OK)
 
 # Verify Code and Access Portal (Step 2)
 @api_view(['POST'])
@@ -61,12 +72,44 @@ def verify_code(request):
             # Generate authentication token
             token, _ = Token.objects.get_or_create(user=user)
 
-            return Response({"message": "Verification successful. You can now access the portal.", "token": token.key}, status=status.HTTP_200_OK)
+            return Response({
+                "message": "Verification successful. You can now access the portal.",
+                "token": token.key
+            }, status=status.HTTP_200_OK)
 
         return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
 
     except User.DoesNotExist:
         return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_code(request):
+    email = request.data.get('email')
+    code = request.data.get('code')
+
+    try:
+        user = User.objects.get(email=email)
+
+        if user.verification_code == code:
+            # Clear the verification code after use
+            user.verification_code = ''
+            user.save()
+
+            # Generate authentication token
+            token, _ = Token.objects.get_or_create(user=user)
+
+            return Response({
+                "message": "Verification successful. You can now access the portal.",
+                "token": token.key
+            }, status=status.HTTP_200_OK)
+
+        return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+
+    except User.DoesNotExist:
+        return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 # Logout (Destroy Token)

@@ -1,0 +1,83 @@
+.chead{
+    background-color: #fff;
+    padding: 10px;
+}
+.cmain-c{
+    padding: 20px;
+}
+.cmain-c button{
+    color: blue;
+    border: gray solid 1px;
+    padding: 4px 10px;
+    margin:0 10px 10px ;
+    border-radius:5px ;
+    font-weight: 600;
+    font-size: 14px;
+    background: #fff;
+}
+.cmain-c p{
+    font-size: 24px;
+    font-weight: 700;
+}
+.cmain-c li{
+    list-style: none;
+    padding: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: gray;
+    cursor: pointer;
+}
+.c-icon{
+    margin-right: 10px ;
+}
+
+.testinfo-container{
+    padding: 20px;
+}
+
+.testinfo-box{
+    background-color: #fff;
+    padding: 20px 30px;
+    margin: 30px 0 ;
+}
+.testinfo-box div:first-child{
+    display: flex;
+    justify-content: space-between;
+
+}
+.testinfo-box div:first-child p,span{
+    font-weight: 500;
+}
+.testinfo-box div:first-child span{
+    color: gray;
+}
+.testinfo-box div:nth-child(2){
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+.testinfo-icon{
+    font-size: 40px !important;
+    color: gray;
+    font-weight: 500;
+   
+}
+p{
+    margin: 0;
+}
+.testinfo-box2{
+    background-color: #fff;
+    padding: 20px 20px;
+}
+.testinfo-box2 p{
+    font-weight: 500;
+}
+.testinfo-box2 li{
+    list-style: none;
+    padding: 10px 0;
+}
+.testinfo-icon-1{
+    color: red;
+    font-size: 30px !important;
+    margin-right: 10px;
+}

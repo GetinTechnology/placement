@@ -9,12 +9,13 @@ import Respontends from "./pages/Portal/respontends/Respontends";
 import ResultDataBase from "./pages/Portal/ResultDataBase/ResultDataBase";
 import Account from "./pages/Portal/account/Account";
 import NewTest from "./pages/Portal/tportal/New test/NewTest";
+import Configuration from "./pages/Portal/tportal/configuration/Configuration";
 
 function App() {
     return (
         <div className="App">
             <Router>
-      
+                
                 <Routes>
                     <Route path="/portal" element={<Portal />} />
                     <Route path="/respondents" element={<Respontends/>}/>
@@ -25,7 +26,8 @@ function App() {
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/verify" element={<Verify />} />
-                </Routes>
+                    <Route path="/configuration/:id" element={<Configuration />} />
+                    </Routes>
             </Router>
         </div>
 

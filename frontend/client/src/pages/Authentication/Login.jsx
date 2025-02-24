@@ -33,18 +33,24 @@ const Login = () => {
 
     try {
         const response = await login(email, password);
-
-        if (response.data.token) {
-            localStorage.setItem("authToken", response.data.token);
+          if(response){
             setMessage("Verification code sent to email.");
-            setTimeout(() => {
-                setAnchorEl(null);
-                navigate("/verify");
-            }, 2000);
-        } else {
-            setMessage(response.detail || "Login failed. No token received.");
-            setTimeout(() => setAnchorEl(null), 3000);
-        }
+                setTimeout(() => {
+                    setAnchorEl(null);
+                    navigate("/verify");
+                }, 2000);
+          }
+        // if (response.data.token) {
+        //     localStorage.setItem("authToken", response.data.token);
+        //     setMessage("Verification code sent to email.");
+        //     setTimeout(() => {
+        //         setAnchorEl(null);
+        //         navigate("/verify");
+        //     }, 2000);
+        // } else {
+        //     setMessage(response.detail || "Login failed. No token received.");
+        //     setTimeout(() => setAnchorEl(null), 3000);
+        // }
     } catch (error) {
         console.error("Login Error:", error);
         setMessage("Login failed. Please check your credentials.");

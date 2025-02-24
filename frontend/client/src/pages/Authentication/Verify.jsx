@@ -23,9 +23,13 @@ const Verify = () => {
 
     const handleVerify = async () => {
         try {
-            await verifyCode(email, code);
+           const response =  await verifyCode(email, code);
+           if (response.data.token) {
+            localStorage.setItem("authToken", response.data.token);
             setMessage("Verification successful! Redirecting...");
             setTimeout(() => navigate("/portal"), 2000);
+           }
+          
         } catch (error) {
             setMessage("Invalid code. Try again.");
         }

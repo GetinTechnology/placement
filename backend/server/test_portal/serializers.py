@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Test
+from .models import *
 
 class TestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,3 +14,18 @@ class TestSerializer(serializers.ModelSerializer):
         
         validated_data['created_by'] = request.user  # Assign the logged-in user
         return super().create(validated_data)
+
+
+
+
+class AnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Answer
+        fields = ['id', 'text', 'is_correct']
+
+class QuestionSerializer(serializers.ModelSerializer):
+    answers = AnswerSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Question
+        fields = '__all__'
