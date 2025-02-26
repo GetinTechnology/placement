@@ -21,11 +21,25 @@ class TestSerializer(serializers.ModelSerializer):
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
-        fields = ['id', 'text', 'is_correct']
+        fields = ['id', 'text', 'is_correct'   ]
 
 class QuestionSerializer(serializers.ModelSerializer):
-    answers = AnswerSerializer(many=True, read_only=True)
-
     class Meta:
         model = Question
         fields = '__all__'
+        extra_kwargs = {
+            'test': {'required': False},  # Prevents validation error for missing 'test'
+            'created_by': {'required': False}  # Prevents validation error for missing 'created_by'
+        }
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        
+        # Ensure request.user is set
+        if request and hasattr(request, "user") and request.user.is_authenticated:
+            validated_data["created_by"] = request.user
+        else:
+            raise serializers.ValidationError({"created_by": "User authentication required."})
+        
+        return super().create(validated_data)
+

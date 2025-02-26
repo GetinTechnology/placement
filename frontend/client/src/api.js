@@ -14,3 +14,4 @@ export const verifyCode = (email, code) => {
     return axios.post(`${API_URL}verify/`, { email, code });
 };
 
+

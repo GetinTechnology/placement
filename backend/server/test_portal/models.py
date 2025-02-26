@@ -14,27 +14,33 @@ class Test(models.Model):
         return self.name
 
 class Question(models.Model):
-    ANSWER_TYPES = [
-        ('single', 'Single Choice'),
-        ('multiple', 'Multiple Choice'),
-        ('descriptive', 'Descriptive'),
-        ('true_false', 'True/False'),
-        ('short_answer', 'Short Answer'),
-        ('survey', 'Survey'),
+    SINGLE_CHOICE = "single_choice"
+    MULTIPLE_CHOICE = "multiple_choice"
+    DESCRIPTIVE = "descriptive"
+    TRUE_FALSE = "true_false"
+    SHORT_ANSWER = "short_answer"
+    SURVEY = "survey"
+
+    QUESTION_TYPES = [
+        (SINGLE_CHOICE, "Single Choice"),
+        (MULTIPLE_CHOICE, "Multiple Choice"),
+        (DESCRIPTIVE, "Descriptive"),
+        (TRUE_FALSE, "True/False"),
+        (SHORT_ANSWER, "Short Answer"),
+        (SURVEY, "Survey"),
     ]
 
-    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions')
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="questions")
     text = models.TextField()
-    answer_type = models.CharField(max_length=20, choices=ANSWER_TYPES)
-    created_at = models.DateTimeField(auto_now_add=True)
+    question_type = models.CharField(max_length=50, choices=QUESTION_TYPES)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    points = models.IntegerField(default=1)  # ✅ Ensure this is here
+
 
     def __str__(self):
         return self.text
 
 class Answer(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
-    text = models.CharField(max_length=500)
-    is_correct = models.BooleanField(default=False)  # Used for MCQs & True/False
-
-    def __str__(self):
-        return self.text
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers")
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)

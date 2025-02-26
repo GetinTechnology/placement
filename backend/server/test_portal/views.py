@@ -5,6 +5,8 @@ from rest_framework import status
 from .models import Test
 from .serializers import *
 from rest_framework.authentication import TokenAuthentication
+from django.shortcuts import get_object_or_404
+
 
 @api_view(['GET', 'POST', 'PUT'])
 @authentication_classes([TokenAuthentication])
@@ -93,11 +95,16 @@ def add_question(request, test_id):
     except Test.DoesNotExist:
         return Response({"error": "Test not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    serializer = QuestionSerializer(data=request.data)
+    
+    serializer = QuestionSerializer(data=request.data, context={'request': request})  
+    print(serializer.is_valid())
+    print(serializer.errors)
     if serializer.is_valid():
-        serializer.save(test=test)
+        serializer.save(test=test)  
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
@@ -130,3 +137,15 @@ def get_answers(request, question_id):
     answers = Answer.objects.filter(question__id=question_id, question__test__created_by=request.user)
     serializer = AnswerSerializer(answers, many=True)
     return Response(serializer.data)
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])  # Ensures only logged-in users can delete
+def delete_question(request, test_id, question_id):
+    question = get_object_or_404(Question, id=question_id, test_id=test_id)
+
+    # Optional: Check if the user has permission to delete (modify as per your logic)
+    if request.user != question.created_by:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    question.delete()
+    return Response({"message": "Question deleted successfully"}, status=status.HTTP_204_NO_CONTENT)

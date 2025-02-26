@@ -57,6 +57,10 @@ function Configuration() {
     fetchTests();
   }, [id]);
 
+  useEffect(() => {
+    console.log("Current toggle state:", toggle);
+  }, [toggle]);
+
   function navigatecontent(page) {
     setToggle(toggle === page ? 'test_info' : page);
   }
