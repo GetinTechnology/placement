@@ -21,12 +21,14 @@ class TestSerializer(serializers.ModelSerializer):
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Answer
-        fields = ['id', 'text', 'is_correct'   ]
+        fields = ['id', 'text', 'is_correct']
 
 class QuestionSerializer(serializers.ModelSerializer):
+    answers = AnswerSerializer(many=True)  # Remove read_only=True
+
     class Meta:
         model = Question
-        fields = '__all__'
+        fields = ['id', 'question_type', 'test', 'text', 'created_by', 'points', 'answers']
         extra_kwargs = {
             'test': {'required': False},  # Prevents validation error for missing 'test'
             'created_by': {'required': False}  # Prevents validation error for missing 'created_by'
@@ -34,12 +36,24 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get("request")
-        
-        # Ensure request.user is set
-        if request and hasattr(request, "user") and request.user.is_authenticated:
-            validated_data["created_by"] = request.user
-        else:
+        test = self.context.get("test")
+
+        if not request or not request.user.is_authenticated:
             raise serializers.ValidationError({"created_by": "User authentication required."})
-        
-        return super().create(validated_data)
+
+        if not test:
+            raise serializers.ValidationError({"test": "Test ID is required."})
+
+        validated_data["created_by"] = request.user
+        validated_data["test"] = test
+
+        # Extract and create answer instances
+        answers_data = validated_data.pop("answers", [])
+        question = Question.objects.create(**validated_data)
+
+        for answer_data in answers_data:
+            Answer.objects.create(question=question, **answer_data)
+
+        return question
+
 

@@ -34,7 +34,7 @@ class Question(models.Model):
     text = models.TextField()
     question_type = models.CharField(max_length=50, choices=QUESTION_TYPES)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    points = models.IntegerField(default=1)  # ✅ Ensure this is here
+    points = models.IntegerField(default=1)  
 
 
     def __str__(self):

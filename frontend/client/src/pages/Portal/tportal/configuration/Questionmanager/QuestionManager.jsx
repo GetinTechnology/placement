@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button, Form } from "react-bootstrap";
 import QuestionList from "./QuestionList";
+import './question.css'
 
-const QuestionManager = () => {
-  const { id } = useParams(); // Get test ID from URL
+const QuestionManager = ({ onAddQuestion }) => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
+  const [toggle, setToggle] = useState("Question Manager");
+
   const [newQuestion, setNewQuestion] = useState({
     text: "",
     question_type: "single_choice",
@@ -17,12 +20,10 @@ const QuestionManager = () => {
       { text: "", is_correct: false },
     ],
   });
-const [toggle,setToggle] = useState('Question Manager')
-  
 
   useEffect(() => {
     fetchQuestions();
-  }, []);
+  }, [id]); // Added dependency
 
   const fetchQuestions = async () => {
     const token = localStorage.getItem("authToken");
@@ -36,20 +37,8 @@ const [toggle,setToggle] = useState('Question Manager')
     setQuestions(data);
   };
 
-  const handleQuestionChange = (e) => {
-    setNewQuestion({ ...newQuestion, text: e.target.value });
-  };
-
-  const handleTypeChange = (e) => {
-    setNewQuestion({
-      ...newQuestion,
-      question_type: e.target.value,
-      answers: [
-        { text: "", is_correct: false },
-        { text: "", is_correct: false },
-        { text: "", is_correct: false },
-      ],
-    });
+  const handleInputChange = (field, value) => {
+    setNewQuestion({ ...newQuestion, [field]: value });
   };
 
   const addAnswerField = () => {
@@ -60,8 +49,10 @@ const [toggle,setToggle] = useState('Question Manager')
   };
 
   const removeAnswerField = (index) => {
-    const updatedAnswers = newQuestion.answers.filter((_, i) => i !== index);
-    setNewQuestion({ ...newQuestion, answers: updatedAnswers });
+    setNewQuestion({
+      ...newQuestion,
+      answers: newQuestion.answers.filter((_, i) => i !== index),
+    });
   };
 
   const handleAnswerChange = (index, value) => {
@@ -72,6 +63,7 @@ const [toggle,setToggle] = useState('Question Manager')
 
   const handleCorrectAnswerChange = (index) => {
     let updatedAnswers = [...newQuestion.answers];
+
     if (newQuestion.question_type === "single_choice") {
       updatedAnswers = updatedAnswers.map((a, i) => ({
         ...a,
@@ -80,14 +72,16 @@ const [toggle,setToggle] = useState('Question Manager')
     } else {
       updatedAnswers[index].is_correct = !updatedAnswers[index].is_correct;
     }
+
     setNewQuestion({ ...newQuestion, answers: updatedAnswers });
   };
 
-  const handleQuestionPointsChange = (e) => {
-    setNewQuestion({ ...newQuestion, points: Number(e.target.value) });
-  };
-
   const addQuestion = async (resetForm = false) => {
+    if (!newQuestion.text.trim()) {
+      alert("Question cannot be empty.");
+      return;
+    }
+
     const token = localStorage.getItem("authToken");
     const response = await fetch(
       `http://127.0.0.1:8000/portal/test/${id}/questions/add`,
@@ -115,34 +109,33 @@ const [toggle,setToggle] = useState('Question Manager')
           ],
         });
       } else {
-        navigatecontent("Questionlist");
+        setToggle("Questionlist");
       }
     }
+    onAddQuestion();
   };
-
-  function navigatecontent(page) {
-    setToggle(toggle === page ? 'Question Manager' : page);
-  }
 
   return toggle === "Questionlist" ? (
     <QuestionList testId={id} />
   ) : (
-    
     <div className="container">
       <h2>Question Manager</h2>
-      <Form>
+      <Form className="question-form">
         <Form.Group>
           <Form.Label>Question</Form.Label>
           <Form.Control
             type="text"
             value={newQuestion.text}
-            onChange={handleQuestionChange}
+            onChange={(e) => handleInputChange("text", e.target.value)}
           />
         </Form.Group>
 
         <Form.Group>
           <Form.Label>Question Type</Form.Label>
-          <Form.Select value={newQuestion.question_type} onChange={handleTypeChange}>
+          <Form.Select
+            value={newQuestion.question_type}
+            onChange={(e) => handleInputChange("question_type", e.target.value)}
+          >
             <option value="single_choice">Single Choice</option>
             <option value="multiple_choice">Multiple Choice</option>
             <option value="descriptive">Descriptive</option>
@@ -153,11 +146,11 @@ const [toggle,setToggle] = useState('Question Manager')
         </Form.Group>
 
         <Form.Group>
-          <Form.Label>Points for Question</Form.Label>
+          <Form.Label>Points</Form.Label>
           <Form.Control
             type="number"
             value={newQuestion.points}
-            onChange={handleQuestionPointsChange}
+            onChange={(e) => handleInputChange("points", Number(e.target.value))}
           />
         </Form.Group>
 
@@ -174,12 +167,20 @@ const [toggle,setToggle] = useState('Question Manager')
                     onChange={(e) => handleAnswerChange(index, e.target.value)}
                   />
                   <Form.Check
-                    type={newQuestion.question_type === "single_choice" ? "radio" : "checkbox"}
+                    type={
+                      newQuestion.question_type === "single_choice"
+                        ? "radio"
+                        : "checkbox"
+                    }
                     checked={answer.is_correct}
                     onChange={() => handleCorrectAnswerChange(index)}
                     className="mx-2"
                   />
-                  <Button variant="danger" size="sm" onClick={() => removeAnswerField(index)}>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => removeAnswerField(index)}
+                  >
                     ✖
                   </Button>
                 </div>
@@ -192,10 +193,10 @@ const [toggle,setToggle] = useState('Question Manager')
 
         <div className="mt-3">
           <Button onClick={() => addQuestion(false)}>Save</Button>
-          <Button className="mx-2" onClick={() => addQuestion(true)}>Save & Next</Button>
-          <Button variant="danger" onClick={() => navigate(`/portal/test/${id}/questions`)}>
-            Cancel
+          <Button className="mx-2" onClick={() => addQuestion(true)}>
+            Save & Next
           </Button>
+          <Button variant="danger" onClick={() => navigate(-1)}>Cancel</Button>
         </div>
       </Form>
     </div>

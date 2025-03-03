@@ -41,7 +41,6 @@ def test(request, test_id=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 @api_view(['DELETE'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -90,15 +89,17 @@ def duplicate_test(request, test_id):
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def add_question(request, test_id):
+    print("Incoming request data:", request.data)  # Debugging log
+
     try:
         test = Test.objects.get(id=test_id, created_by=request.user)
     except Test.DoesNotExist:
         return Response({"error": "Test not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    
-    serializer = QuestionSerializer(data=request.data, context={'request': request})  
-    print(serializer.is_valid())
-    print(serializer.errors)
+    serializer = QuestionSerializer(data=request.data, context={'request': request, 'test': test})  
+    print("Is valid:", serializer.is_valid())  
+    print("Errors:", serializer.errors)
+
     if serializer.is_valid():
         serializer.save(test=test)  
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -149,3 +150,26 @@ def delete_question(request, test_id, question_id):
 
     question.delete()
     return Response({"message": "Question deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['PUT'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def update_question(request, test_id, question_id):
+    question = get_object_or_404(Question, id=question_id, test_id=test_id)
+
+
+    if request.user != question.created_by:
+        return Response({"error": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = QuestionSerializer(instance=question, data=request.data, partial=True)
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+

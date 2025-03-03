@@ -2,49 +2,45 @@ import React, { useState, useEffect } from "react";
 import Menu from "../../Menu";
 import { Container, Row, Col } from "react-bootstrap";
 import { useParams } from "react-router-dom";
-import SettingsSuggestOutlinedIcon from '@mui/icons-material/SettingsSuggestOutlined';
-import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined';
-import DatasetOutlinedIcon from '@mui/icons-material/DatasetOutlined';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
-import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined';  
-import './configure.css'
+import {
+  SettingsSuggestOutlined as SettingsIcon,
+  QuizOutlined as QuizIcon,
+  DatasetOutlined as DatasetIcon,
+  LockOutlined as LockIcon,
+  HomeOutlined as HomeIcon,
+  AccessTimeOutlined as TimeIcon,
+  EventNoteOutlined as EventIcon,
+} from "@mui/icons-material";
+import "./configure.css";
 import TestInfo from "./TestInfo";
 import UpdateTestPage from "./Update";
 import QuestionManager from "./Questionmanager/QuestionManager";
+import QuestionList from "./Questionmanager/QuestionList";
+import axios from "axios";
 
 function Configuration() {
-  const { id } = useParams(); // Get test ID from URL
+  const { id } = useParams();
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [test, setTest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [toggle,setToggle] = useState('test_info')
+  const [toggle, setToggle] = useState("test_info");
+  const [showQuestionList, setShowQuestionList] = useState(false);
+  const [questions, setQuestions] = useState([]);
+
 
   useEffect(() => {
     const fetchTests = async () => {
       try {
         const token = localStorage.getItem("authToken");
         const response = await fetch("http://127.0.0.1:8000/portal/test", {
-          headers: {
-            Authorization: `Token ${token}`,
-          },
+          headers: { Authorization: `Token ${token}` },
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch test details");
-        }
-
+        if (!response.ok) throw new Error("Failed to fetch test details");
         const data = await response.json();
-
-        // Convert URL param `id` to number and find the specific test
         const testData = data.find((test) => test.id === parseInt(id));
-
-        if (!testData) {
-          throw new Error("Test not found");
-        }
-
+        if (!testData) throw new Error("Test not found");
         setTest(testData);
       } catch (error) {
         console.error("Error fetching test:", error);
@@ -53,25 +49,47 @@ function Configuration() {
         setLoading(false);
       }
     };
-
     fetchTests();
+
+    const fetchQuestions = async () => {
+      setLoading(true);  // Ensure loading is set before fetching
+      setError("");  // Reset error state
+
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get(`http://127.0.0.1:8000/portal/test/${id}/questions`, {
+          headers: { Authorization: `Token ${token}` },
+        });
+
+        setQuestions(response.data);
+      } catch (error) {
+        console.error(error);
+        setError("Failed to load questions. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuestions()
   }, [id]);
 
-  useEffect(() => {
-    console.log("Current toggle state:", toggle);
-  }, [toggle]);
 
-  function navigatecontent(page) {
-    setToggle(toggle === page ? 'test_info' : page);
+  function navigateContent(page) {
+    setToggle(toggle === page ? "test_info" : page);
+    if (page === "Question Manager") {
+      setShowQuestionList(false); // Ensure Question Manager is shown initially
+    }
   }
+
+  // Function to handle question addition
+  const handleAddQuestion = () => {
+    setShowQuestionList(true);
+  };
+
   return (
     <div>
       <div className={`menu ${isCollapsed ? "collapsed" : ""}`}>
         <Menu toggleSidebar={() => setIsCollapsed(!isCollapsed)} isCollapsed={isCollapsed} />
       </div>
-
-
-
 
       {loading ? (
         <p>Loading test details...</p>
@@ -81,71 +99,64 @@ function Configuration() {
         <>
           <div className="chead">
             <Container>
-              <h3 >{test.name}</h3>
+              <h3>{test.name}</h3>
             </Container>
-
           </div>
           <div className="cmain">
             <Container>
-            <Row>
-            <Col className="cmain-c" lg={4}>
-              <button>Setup in Progress</button>
-              <div>
-                <p>Test Configuration</p>
-                <div className="cmain-c-box2">
-                  <ul>
-                    <li onClick={()=>navigatecontent('Basic Settings')}><SettingsSuggestOutlinedIcon className="c-icon"/>Basic Settings</li>
-                    <li  onClick={()=>navigatecontent('Question Manager')}>< QuizOutlinedIcon className="c-icon"/>Question Manager</li>
-                    <li onClick={()=>navigatecontent('Test Sets')}><DatasetOutlinedIcon className="c-icon"/>Test Sets</li>
-                    <li onClick={()=>navigatecontent('Test Access')}><LockOutlinedIcon className="c-icon"/> Test Access</li>
-                    <li onClick={()=>navigatecontent('Test Start page')}><HomeOutlinedIcon className="c-icon"/> Test Start page</li>
-                    <li onClick={()=>navigatecontent('Grading and Summary')}><EventNoteOutlinedIcon className="c-icon"/>Grading and Summary</li>
-                    <li onClick={()=>navigatecontent('Time Setting')}> <AccessTimeOutlinedIcon className="c-icon"/>Time Setting</li>
-                    <li>Activate Test</li>
-                  </ul>
-                </div>
-              </div>
-              <div>
+              <Row>
+                {/* Sidebar */}
+                <Col className="cmain-c" lg={3}>
+                  <button>Setup in Progress</button>
+                  <div>
+                    <p>Test Configuration</p>
+                    <div className="cmain-c-box2">
+                      <ul>
+                        {[
+                          ["Basic Settings", <SettingsIcon className="c-icon" />],
+                          ["Question Manager", <QuizIcon className="c-icon" />],
+                          ["Test Sets", <DatasetIcon className="c-icon" />],
+                          ["Test Access", <LockIcon className="c-icon" />],
+                          ["Test Start Page", <HomeIcon className="c-icon" />],
+                          ["Grading and Summary", <EventIcon className="c-icon" />],
+                          ["Time Setting", <TimeIcon className="c-icon" />],
+                        ].map(([label, icon]) => (
+                          <li key={label} onClick={() => navigateContent(label)}>
+                            {icon} {label}
+                          </li>
+                        ))}
+                        <li>Activate Test</li>
+                      </ul>
+                    </div>
+                  </div>
+                </Col>
 
-                <ul>
-                  <li>Responted monitoring</li>
-                  <li>Result Table</li>
-                  <li>Test Sheet Review</li>
-                  <li>Answer Review</li>
-                  <li>Statics</li>
-                </ul>
-              </div>
-            </Col>
-            <Col lg={8}>
-            {
-              toggle === 'test_info' && (
-                <TestInfo/>
-              )
-            }
-            {
-              toggle === 'Basic Settings' &&(
-                <UpdateTestPage/>
-              )
-            }
-             {
-              toggle === 'Question Manager' && (
-                <QuestionManager/>
-              )
-             }
-            
-            </Col>
-          </Row>
+                {/* Main Content Area */}
+                <Col lg={9}>
+                  {toggle === "test_info" && <TestInfo />}
+                  {toggle === "Basic Settings" && <UpdateTestPage />}
+
+                  {toggle === "Question Manager" && (
+                    <>
+                      {questions.length === 0 ? (
+                        <QuestionManager onAddQuestion={handleAddQuestion} />
+                      ) : (
+                        <QuestionList />
+                      )}
+                    </>
+                  )}
+
+                </Col>
+              </Row>
             </Container>
-  
           </div>
         </>
-
       ) : (
         <p>No test data available.</p>
       )}
-
     </div>
   );
 }
 
 export default Configuration;
+
