@@ -49,7 +49,6 @@ const QuestionList = ({ onBack }) => {
   const handleAddQuestion = () => {
     setShowQuestionManager(true);
   };
-  console.log(questions)
   return (
     <div className="p-4">
       {showQuestionManager ? (
@@ -62,22 +61,6 @@ const QuestionList = ({ onBack }) => {
               ➕ Add Question
             </button>
           </div>
-
-          {/* <Row className="filter">
-            <Col lg={2}>
-              <div className="">
-                <p>Questions {questions.length}</p>
-              </div>
-            </Col>
-            <Col lg={10}>
-              <div className="">
-                <p>Manage categories</p>
-                <div>
-                  <p>Status</p>
-                </div>
-              </div>
-            </Col>
-          </Row> */}
 
           {loading && <p>Loading questions...</p>}
           {error && (

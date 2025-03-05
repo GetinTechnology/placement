@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import './newtest.css';
 
@@ -10,12 +10,14 @@ function BasicSettings({ onTestCreated }) {
   });
 
   const [categories, setCategories] = useState(['uncategorized']);
-  const [newCategory, setNewCategory] = useState('');
+  const [newCategory, setNewCategory] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  console.log(formData)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,13 +50,73 @@ function BasicSettings({ onTestCreated }) {
     }
   };
 
-  const handleAddCategory = () => {
-    if (newCategory.trim() !== '' && !categories.includes(newCategory)) {
-      setCategories([...categories, newCategory]);
-      setNewCategory('');
-      setShowModal(false);
+  const handleAddCategory = async () => {
+    if (newCategory.trim() === '') {
+      alert('Category name cannot be empty');
+      return;
+    }
+  
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      alert('You are not logged in!');
+      return;
+    }
+  
+    try {
+      const response = await fetch('http://localhost:8000/portal/category/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newCategory }),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        setCategories([...categories, data.name]);
+        setNewCategory('');
+        setShowModal(false);
+      } else {
+        alert(data.error || 'Failed to add category');
+      }
+    } catch (error) {
+      console.error('Error adding category:', error);
     }
   };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const token = localStorage.getItem('authToken'); // Retrieve token from localStorage
+      if (!token) {
+        console.error('No authentication token found!');
+        return;
+      }
+  
+      try {
+        const response = await fetch('http://localhost:8000/portal/category/', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Token ${token}`, // Include token in request
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+  
+    fetchCategories();
+  }, []);
+  
 
   return (
     <div>
@@ -67,9 +129,9 @@ function BasicSettings({ onTestCreated }) {
 
           <label>Category</label>
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <select name="category" value={formData.category} onChange={handleChange}>
-              {categories.map((cat, index) => (
-                <option key={index} value={cat}>{cat}</option>
+          <select name="category" value={formData.category} onChange={handleChange}>
+          {categories.map((cat, index) => (
+                <option key={index} value={cat.id}>{cat.name}</option>
               ))}
             </select>
             <Button variant="success" className='ml-2' onClick={() => setShowModal(true)}>+</Button>

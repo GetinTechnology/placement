@@ -81,3 +81,51 @@ p{
     font-size: 30px !important;
     margin-right: 10px;
 }
+
+.update-test-form{
+    margin-top: 2rem;
+    background-color: #fff;
+    padding: 30px 30px;
+    border-radius:10px ;
+    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
+
+
+}
+
+.update-test-form label{
+    margin: 10px 0;
+    color: gray;
+    font-weight: 600;
+}
+.update-test-form input,select{
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    padding: 10px;
+    border-bottom: 1px solid gray;
+}
+
+
+.question-popup {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    padding: 10px 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+  
+  .question-popup button {
+    display: flex;
+    width: 100%;
+    margin-bottom: 5px;
+    cursor: pointer;
+    border: none;
+    padding: 5px;
+    text-align: left;
+  }
+  
+  .question-popup button:hover {
+    background: #ddd;
+  }
+  

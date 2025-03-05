@@ -131,3 +131,53 @@
     border-radius: 10px;
     
 }
+.po-cat{
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 20px;
+  }
+  
+  .custom-checkbox input {
+    display: none; /* Hide the default checkbox */
+  }
+  
+  .custom-checkbox .checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #2E7D32; /* Forest Green */
+    border-radius: 4px;
+    display: inline-block;
+    position: relative;
+    margin-right: 8px;
+    transition: all 0.3s;
+  }
+  
+  .custom-checkbox input:checked + .checkmark {
+    background-color: #2E7D32; /* Checked background */
+    border-color: #2E7D32;
+  }
+  
+  .custom-checkbox .checkmark::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 6px;
+    height: 12px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  
+  .custom-checkbox input:checked + .checkmark::after {
+    opacity: 1;
+  }
+  

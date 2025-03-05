@@ -10,6 +10,10 @@ import ResultDataBase from "./pages/Portal/ResultDataBase/ResultDataBase";
 import Account from "./pages/Portal/account/Account";
 import NewTest from "./pages/Portal/tportal/New test/NewTest";
 import Configuration from "./pages/Portal/tportal/configuration/Configuration";
+import ForgotPassword from "./pages/Authentication/ForgotPassword";
+import VerifyReset from "./pages/Authentication/VerifyRest";
+import ResetPassword from "./pages/Authentication/ResetPassword";
+import CSVUpload from "./pages/Portal/tportal/configuration/Questionmanager/CsvUpload";
 
 function App() {
     return (
@@ -23,9 +27,13 @@ function App() {
                     <Route path="/account" element={<Account/>}/>
                     <Route path="/signout" element={<Respontends/>}/>
                     <Route path="/newtest" element={<NewTest/>}/>
+                    <Route path="/csv" element={<CSVUpload/>}/>
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/verify" element={<Verify />} />
+                    <Route path="/forgot_password" element={<ForgotPassword/>}/>
+                    <Route path="/verify_reset_code" element={<VerifyReset/>}/>
+                    <Route path="/reset_password" element={<ResetPassword/>}/>
                     <Route path="/configuration/:id" element={<Configuration />} />
                     </Routes>
             </Router>

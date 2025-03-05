@@ -82,6 +82,18 @@ const QuestionManager = ({ onAddQuestion }) => {
       return;
     }
 
+    if (
+      newQuestion.question_type !== "descriptive" &&
+      newQuestion.question_type !== "short_answer"
+  ) {
+      const hasCorrectAnswer = newQuestion.answers.some(answer => answer.is_correct);
+      if (!hasCorrectAnswer) {
+          alert("Please select at least one correct answer.");
+          return;
+      }
+  }
+
+
     const token = localStorage.getItem("authToken");
     const response = await fetch(
       `http://127.0.0.1:8000/portal/test/${id}/questions/add`,
@@ -199,6 +211,7 @@ const QuestionManager = ({ onAddQuestion }) => {
           <Button variant="danger" onClick={() => navigate(-1)}>Cancel</Button>
         </div>
       </Form>
+
     </div>
   );
 };

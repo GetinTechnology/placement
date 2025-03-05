@@ -27,7 +27,7 @@ const Verify = () => {
            if (response.data.token) {
             localStorage.setItem("authToken", response.data.token);
             setMessage("Verification successful! Redirecting...");
-            setTimeout(() => navigate("/portal"), 2000);
+            setTimeout(() => navigate("/login"), 2000);
            }
           
         } catch (error) {

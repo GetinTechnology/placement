@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { register } from "../../api";
+import { register } from "../../api"; // API call
 import { useNavigate } from "react-router-dom";
 import "./register.css";
 import { Popper } from "@mui/base/Popper";
@@ -12,8 +12,8 @@ const PopperMessage = styled("div")({
   borderRadius: "5px",
   fontSize: "14px",
   boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
-  transform:'translatey(-200px)',
-  backgroundColor:'red'
+  transform: "translateY(-200px)",
+  backgroundColor: "red",
 });
 
 function Register() {
@@ -28,20 +28,23 @@ function Register() {
     if (!checkbox) {
       setMessage("You must agree to the Terms & Conditions to register.");
       setAnchorEl(event.currentTarget);
-      setTimeout(() => setAnchorEl(null), 3000); // Hide after 3 seconds
+      setTimeout(() => setAnchorEl(null), 3000);
       return;
     }
 
     try {
-      await register(email, password);
-      setMessage("Registration successful! Please log in.");
+      const response = await register(email, password);
+
+      // ✅ Registration successful - Navigate to verify screen
+      setMessage("Registration successful! Please verify your email.");
       setAnchorEl(event.currentTarget);
       setTimeout(() => {
         setAnchorEl(null);
-        navigate("/login");
+        navigate("/verify", { state: { email } }); // Pass email to verify page
       }, 3000);
     } catch (error) {
-      setMessage("Registration failed. Try again.");
+      // ✅ Show meaningful error messages
+      setMessage(error.response?.data?.error || "Registration failed. Try again.");
       setAnchorEl(event.currentTarget);
       setTimeout(() => setAnchorEl(null), 3000);
     }

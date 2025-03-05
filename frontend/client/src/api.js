@@ -15,3 +15,11 @@ export const verifyCode = (email, code) => {
 };
 
 
+export const forgotPassword = (email) =>
+    axios.post(`${API_URL}forgot_password/`, { email }).then((res) => res.data);
+  
+  export const verifyResetCode = (email, code) =>
+    axios.post(`http://127.0.0.1:8000/auth/verify_reset_code/`, { email, code }).then((res) => res.data);
+  
+  export const resetPassword = (email, newPassword) =>
+    axios.post(`${API_URL}/reset-password/`, { email, new_password: newPassword }).then((res) => res.data);

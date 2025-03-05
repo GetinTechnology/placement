@@ -16,6 +16,7 @@ import TestInfo from "./TestInfo";
 import UpdateTestPage from "./Update";
 import QuestionManager from "./Questionmanager/QuestionManager";
 import QuestionList from "./Questionmanager/QuestionList";
+import CSVUploads from "./Questionmanager/CsvUpload";  // Import CSV upload component
 import axios from "axios";
 
 function Configuration() {
@@ -25,9 +26,10 @@ function Configuration() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [toggle, setToggle] = useState("test_info");
+  const [showQuestionPopup, setShowQuestionPopup] = useState(false);
+  const [questionMode, setQuestionMode] = useState(null);  // Track CSV or Scratch
   const [showQuestionList, setShowQuestionList] = useState(false);
   const [questions, setQuestions] = useState([]);
-
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -52,8 +54,8 @@ function Configuration() {
     fetchTests();
 
     const fetchQuestions = async () => {
-      setLoading(true);  // Ensure loading is set before fetching
-      setError("");  // Reset error state
+      setLoading(true);
+      setError("");
 
       try {
         const token = localStorage.getItem("authToken");
@@ -69,21 +71,21 @@ function Configuration() {
         setLoading(false);
       }
     };
-    fetchQuestions()
+    fetchQuestions();
   }, [id]);
 
-
-  function navigateContent(page) {
-    setToggle(toggle === page ? "test_info" : page);
-    if (page === "Question Manager") {
-      setShowQuestionList(false); // Ensure Question Manager is shown initially
-    }
-  }
-
-  // Function to handle question addition
   const handleAddQuestion = () => {
     setShowQuestionList(true);
   };
+
+  function navigateContent(page) {
+    setToggle(page);
+    if (page !== "Question Manager") {
+      setQuestionMode(null); // Reset question mode when navigating away
+    }
+  }
+
+  console.log(questions.length)
 
   return (
     <div>
@@ -111,10 +113,26 @@ function Configuration() {
                   <div>
                     <p>Test Configuration</p>
                     <div className="cmain-c-box2">
+
                       <ul>
+                        <li
+                          onMouseEnter={() => setShowQuestionPopup(true)}
+                          onMouseLeave={() => setShowQuestionPopup(false)}
+                        >
+                          <QuizIcon className="c-icon" /> Question Manager
+                          {showQuestionPopup && (
+                            <div className="question-popup">
+                              <button onClick={() => { setToggle("Question Manager"); setQuestionMode("CSV"); }}>
+                                CSV Upload
+                              </button>
+                              <button onClick={() => { setToggle("Question Manager"); setQuestionMode("Scratch"); }}>
+                                Scratch
+                              </button>
+                            </div>
+                          )}
+                        </li>
                         {[
                           ["Basic Settings", <SettingsIcon className="c-icon" />],
-                          ["Question Manager", <QuizIcon className="c-icon" />],
                           ["Test Sets", <DatasetIcon className="c-icon" />],
                           ["Test Access", <LockIcon className="c-icon" />],
                           ["Test Start Page", <HomeIcon className="c-icon" />],
@@ -125,6 +143,10 @@ function Configuration() {
                             {icon} {label}
                           </li>
                         ))}
+
+                        {/* Question Manager with Hover Popup */}
+
+
                         <li>Activate Test</li>
                       </ul>
                     </div>
@@ -136,16 +158,16 @@ function Configuration() {
                   {toggle === "test_info" && <TestInfo />}
                   {toggle === "Basic Settings" && <UpdateTestPage />}
 
+                  {/* Question Manager Logic */}
                   {toggle === "Question Manager" && (
                     <>
-                      {questions.length === 0 ? (
-                        <QuestionManager onAddQuestion={handleAddQuestion} />
+                      {questionMode === "CSV" ? (
+                        questions.length === 0 ? <CSVUploads testId={test.id} /> : <QuestionList />
                       ) : (
-                        <QuestionList />
+                        questions.length === 0 ? <QuestionManager onAddQuestion={handleAddQuestion} /> : <QuestionList />
                       )}
                     </>
                   )}
-
                 </Col>
               </Row>
             </Container>
@@ -159,4 +181,3 @@ function Configuration() {
 }
 
 export default Configuration;
-

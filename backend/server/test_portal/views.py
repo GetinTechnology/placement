@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, permission_classes,authentication_classes
+from rest_framework.decorators import api_view, permission_classes,authentication_classes,parser_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -6,6 +6,46 @@ from .models import Test
 from .serializers import *
 from rest_framework.authentication import TokenAuthentication
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Category
+from .serializers import CategorySerializer
+import pandas as pd
+from django.db import transaction
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import AllowAny
+from django.core.exceptions import ValidationError
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+
+@api_view(['GET', 'POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def add_category(request):
+    if request.method == 'GET':  # ✅ Handle GET request
+        categories = Category.objects.all()
+        serializer = CategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    if request.method == 'POST':  # ✅ Handle POST request
+        category_name = request.data.get('name', '').strip()
+
+        if not category_name:
+            return Response({'error': 'Category name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Category.objects.filter(name__iexact=category_name).exists():
+            return Response({'error': 'Category already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        category = Category.objects.create(name=category_name)
+        serializer = CategorySerializer(category)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 
 @api_view(['GET', 'POST', 'PUT'])
@@ -22,10 +62,20 @@ def test(request, test_id=None):
         return Response(serializer.data)
 
     elif request.method == 'POST':
+        category_id = request.data.get('category', None)
+
+        if not category_id:
+            return Response({'error': 'Category is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        category = Category.objects.filter(id=category_id).first()
+        if not category:
+            return Response({'error': 'Invalid category selection.'}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = TestSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save(created_by=request.user)
+            serializer.save(created_by=request.user, category=category)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'PUT':
@@ -171,5 +221,80 @@ def update_question(request, test_id, question_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])  # Ensure user authentication
+@parser_classes([MultiPartParser, FormParser])
+def upload_csv(request, test_id):
+    """
+    Upload a CSV file to bulk add questions.
+    CSV Format: question_text, question_type, points, answer1, correct1, answer2, correct2, ...
+    """
+    user = request.user  # Get the authenticated user
+    file = request.FILES.get('file')
+
+    if not file:
+        return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        df = pd.read_csv(file)
+    except Exception as e:
+        logger.error(f"CSV parsing error: {str(e)}")
+        return Response({"error": f"Invalid CSV file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Required Columns Validation
+    required_columns = {'question_text', 'question_type', 'points', 'answer1', 'correct1'}
+    if not required_columns.issubset(df.columns):
+        return Response({"error": "CSV file missing required columns."}, status=status.HTTP_400_BAD_REQUEST)
+
+    created_questions = []
+    
+    try:
+        with transaction.atomic():  # Ensure atomicity
+
+            for _, row in df.iterrows():
+                question_text = row.get('question_text')
+                question_type = row.get('question_type')
+                points = row.get('points')
+
+                # Basic Validation
+                if pd.isna(question_text) or pd.isna(question_type) or pd.isna(points):
+                    continue  # Skip invalid rows
+
+                # Save question individually
+                question = Question.objects.create(
+                    test_id=test_id,
+                    text=question_text,
+                    question_type=question_type,
+                    points=int(points),
+                    created_by=user  # Ensure user is assigned
+                )
+
+                # Process answers (Now we have a saved question instance)
+                answers_to_create = []
+                for i in range(1, 6):  # Assuming max 5 answers per question
+                    answer_text = row.get(f'answer{i}')
+                    is_correct = row.get(f'correct{i}', False)
+
+                    if pd.notna(answer_text):
+                        answers_to_create.append(Answer(
+                            question=question,
+                            text=answer_text,
+                            is_correct=bool(is_correct)
+                        ))
+
+                # Bulk insert answers for the current question
+                if answers_to_create:
+                    Answer.objects.bulk_create(answers_to_create)
+
+                created_questions.append(question.id)
+
+        return Response(
+            {"message": "Questions added successfully", "question_ids": created_questions},
+            status=status.HTTP_201_CREATED
+        )
+
+    except Exception as e:
+        logger.error(f"Error while inserting questions: {str(e)}")
+        return Response({"error": f"Something went wrong: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

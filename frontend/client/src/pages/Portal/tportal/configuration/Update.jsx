@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button, Form } from "react-bootstrap";
+import './configure.css'
 
 function UpdateTestPage() {
   const { id } = useParams(); // Get test ID from URL
@@ -44,7 +45,7 @@ function UpdateTestPage() {
 
         setFormData({
           name: testData.name || "",
-          category: testData.category || "",
+          category: testData.category_name || "",
           description: testData.description || "",
         });
       } catch (error) {
@@ -94,7 +95,8 @@ function UpdateTestPage() {
 
   return (
     <div className="container">
-      <h2>Update Test</h2>
+      <h3>Basic Settings</h3>
+      <div className="update-test-form">
       <Form onSubmit={handleSubmit}>
         <Form.Group controlId="testName">
           <Form.Label>Test Name</Form.Label>
@@ -115,6 +117,8 @@ function UpdateTestPage() {
           Update Test
         </Button>
       </Form>
+      </div>
+     
     </div>
   );
 }

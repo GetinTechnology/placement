@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { login } from "../../api";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Popper } from "@mui/base/Popper";
 import { styled } from "@mui/system";
 
@@ -34,23 +34,13 @@ const Login = () => {
     try {
         const response = await login(email, password);
           if(response){
-            setMessage("Verification code sent to email.");
+            localStorage.setItem("authToken", response.data.token);
+            setMessage("login Succuessfull ");
                 setTimeout(() => {
                     setAnchorEl(null);
-                    navigate("/verify");
+                    navigate("/portal");
                 }, 2000);
           }
-        // if (response.data.token) {
-        //     localStorage.setItem("authToken", response.data.token);
-        //     setMessage("Verification code sent to email.");
-        //     setTimeout(() => {
-        //         setAnchorEl(null);
-        //         navigate("/verify");
-        //     }, 2000);
-        // } else {
-        //     setMessage(response.detail || "Login failed. No token received.");
-        //     setTimeout(() => setAnchorEl(null), 3000);
-        // }
     } catch (error) {
         console.error("Login Error:", error);
         setMessage("Login failed. Please check your credentials.");
@@ -93,7 +83,7 @@ const Login = () => {
           <hr />
           <div className="regbottom">
             <button onClick={() => navigate("/register")}>Signup</button>
-            <p>Forgot password?</p>
+            <p><Link to='/forgot_password'>Forgot password?</Link></p>
           </div>
         </div>
       </div>

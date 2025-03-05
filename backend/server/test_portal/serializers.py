@@ -1,10 +1,20 @@
 from rest_framework import serializers
 from .models import *
 
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+        
+        
+        
 class TestSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
     class Meta:
         model = Test
-        fields = ['id', 'name', 'category', 'description', 'created_at', 'created_by']
+        fields = ['id', 'name', 'category','category_name', 'description', 'created_at', 'created_by']
         read_only_fields = ['created_at', 'created_by']
 
     def create(self, validated_data):
