@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser,BaseUserManager
 from django.db import models
-
+from django.conf import settings
 
 
 class User(AbstractUser):
@@ -16,3 +16,11 @@ class User(AbstractUser):
         return self.email
 
 
+
+class Student(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="student_profile")
+    student_name = models.EmailField(unique=True)
+    enrolled_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Student: {self.user.email}"

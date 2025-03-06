@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.conf import settings
+import uuid
 
 User = get_user_model()
 
@@ -47,3 +49,22 @@ class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers")
     text = models.CharField(max_length=255)
     is_correct = models.BooleanField(default=False)
+
+class TestAttempt(models.Model):
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    test = models.ForeignKey(Test, on_delete=models.CASCADE)
+    attempt_uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    submitted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.student.email} - {self.test.title} ({self.attempt_uuid})"
+
+
+class StudentResponse(models.Model):
+    attempt = models.ForeignKey(TestAttempt, on_delete=models.CASCADE, related_name="responses")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected_choices = models.ManyToManyField(Answer, blank=True)
+    descriptive_answer = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.attempt.student.email} - {self.question.text}"

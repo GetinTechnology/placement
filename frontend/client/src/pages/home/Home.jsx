@@ -6,7 +6,7 @@ function Home() {
     <div>
         <ul>
             <li><Link to='/'>Home</Link></li>
-            <li><Link to='/register'>Register</Link></li>
+            <li><Link to='/register_student'>Register</Link></li>
             <li><Link to='/login'>Login</Link></li>
         </ul>
     </div>

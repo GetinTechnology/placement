@@ -12,5 +12,5 @@ urlpatterns = [
     path("question/<int:question_id>/answers", views.get_answers, name="get_answers"),
     path("test/<int:test_id>/upload_csv/",views.upload_csv,name="upload_csv"),
     path('test/<int:test_id>/question/<int:question_id>/delete/', views.delete_question, name='delete-question'),
-
+    path('test/<int:test_id>/details/',views.get_test_details,name='test_deatils')
 ]

@@ -8,19 +8,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
-from .serializers import UserRegistrationSerializer
+from .serializers import *
 from .models import User
 import random
 import re
-from django.contrib.auth import authenticate
-from django.core.mail import send_mail
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from .models import User  # Assuming a custom User model with email-based authentication
-from .serializers import UserRegistrationSerializer
+
 
 
 # Helper function for strong password validation
@@ -209,3 +201,35 @@ def reset_password(request):
 
     except User.DoesNotExist:
         return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+
+
+#student authendication 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_student(request):
+    print("Received Data:", request.data)  # Debugging
+    serializer = StudentRegistrationSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Student registered successfully"}, status=201)
+    print("Errors:", serializer.errors)  # Print errors if request fails
+    return Response(serializer.errors, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def student_login(request):
+    email = request.data.get("email")
+    password = request.data.get("password")
+
+    user = authenticate(email=email, password=password)
+
+    if user:
+        # ✅ Ensure the user has a student profile
+        if Student.objects.filter(user=user).exists():
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"message": "Student login successful", "token": token.key}, status=200)
+        else:
+            return Response({"error": "Not a student"}, status=403)  # Use 403 for permission denied
+    return Response({"error": "Invalid credentials"}, status=401)

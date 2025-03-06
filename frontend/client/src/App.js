@@ -14,6 +14,8 @@ import ForgotPassword from "./pages/Authentication/ForgotPassword";
 import VerifyReset from "./pages/Authentication/VerifyRest";
 import ResetPassword from "./pages/Authentication/ResetPassword";
 import CSVUpload from "./pages/Portal/tportal/configuration/Questionmanager/CsvUpload";
+import StudentRegister from "./pages/Authentication/StudentRegister";
+import StudentLogin from "./pages/Authentication/StudentLogin";
 
 function App() {
     return (
@@ -21,6 +23,7 @@ function App() {
             <Router>
                 
                 <Routes>
+                    <Route path="/" element={<Home/>}/>
                     <Route path="/portal" element={<Portal />} />
                     <Route path="/respondents" element={<Respontends/>}/>
                     <Route path="/result_data_base" element={<ResultDataBase/>}/>
@@ -31,6 +34,8 @@ function App() {
                     <Route path="/register" element={<Register />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/verify" element={<Verify />} />
+                    <Route path='/register_student' element={<StudentRegister/>}/>
+                    <Route path='/login_student' element={<StudentLogin/>}/>
                     <Route path="/forgot_password" element={<ForgotPassword/>}/>
                     <Route path="/verify_reset_code" element={<VerifyReset/>}/>
                     <Route path="/reset_password" element={<ResetPassword/>}/>

@@ -23,3 +23,8 @@ export const forgotPassword = (email) =>
   
   export const resetPassword = (email, newPassword) =>
     axios.post(`${API_URL}/reset-password/`, { email, new_password: newPassword }).then((res) => res.data);
+
+
+export const loginStudent = async (email,password) => {
+  return axios.post(`${API_URL}/login/student/`,{email,password});
+};

@@ -1,6 +1,6 @@
 # serializers.py
 from rest_framework import serializers
-from .models import User
+from .models import User,Student
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -18,3 +18,20 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
+
+
+class StudentRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["email", "password"]
+        extra_kwargs = {"password": {"write_only": True}}
+
+    def create(self, validated_data):
+        user = User(email=validated_data['email'])
+        user.set_password(validated_data['password'])
+        user.save()
+        
+        # ✅ Create a linked Student object
+        Student.objects.create(user=user, student_name=user.email.split('@')[0])  # Example name
+
+        return user

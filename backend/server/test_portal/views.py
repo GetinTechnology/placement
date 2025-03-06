@@ -298,3 +298,108 @@ def upload_csv(request, test_id):
         return Response({"error": f"Something went wrong: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_test_details(request, test_id):
+    """
+    Fetch test details including test name, description, and questions with answer choices.
+    """
+    try:
+        test = get_object_or_404(Test, id=test_id)
+        
+        # Fetch questions and their corresponding answers
+        questions = Question.objects.filter(test=test)
+        
+        # Serialize questions and their answers
+        question_list = []
+        for question in questions:
+            answers = Answer.objects.filter(question=question)
+            answer_list = [
+                {
+                    "id": answer.id,
+                    "text": answer.text,
+                    "is_correct": answer.is_correct  # Include this only if necessary
+                }
+                for answer in answers
+            ]
+            
+            question_list.append({
+                "id": question.id,
+                "text": question.text,
+                "question_type": question.question_type,
+                "points": question.points,
+                "answers": answer_list
+            })
+
+        # Prepare the final response
+        response_data = {
+            "test_id": test.id,
+            "test_name": test.test_name,
+            "description": test.description,
+            "category": test.category.name if test.category else None,
+            "questions": question_list
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def submit_test(request, test_id):
+    user = request.user
+
+    # Ensure the student has not submitted the test before
+    attempt, created = TestAttempt.objects.get_or_create(student=user, test_id=test_id)
+
+    if attempt.submitted:
+        return Response({"error": "You have already submitted this test."}, status=400)
+
+    responses = request.data.get("responses", [])
+
+    for response in responses:
+        question_id = response.get("question_id")
+        selected_choice_ids = response.get("selected_choice_ids", [])
+        descriptive_answer = response.get("descriptive_answer", "")
+
+        student_response = StudentResponse.objects.create(
+            attempt=attempt, question_id=question_id, descriptive_answer=descriptive_answer
+        )
+
+        
+        student_response.selected_choices.set(selected_choice_ids)
+
+    attempt.submitted = True
+    attempt.save()
+
+    return Response({"message": "Test submitted successfully!"}, status=201)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_test_link(request, test_id):
+    user = request.user
+
+    attempt, created = TestAttempt.objects.get_or_create(student=user, test_id=test_id)
+
+    return Response({"test_link": f"http://localhost:3000/test/{attempt.attempt_uuid}/"}, status=200)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_submission_status(request, test_id):
+    user = request.user
+    try:
+        attempt = TestAttempt.objects.get(student=user, test_id=test_id)
+        return Response({"submitted": attempt.submitted}, status=200)
+    except TestAttempt.DoesNotExist:
+        return Response({"submitted": False}, status=200)
+
+
+
+
