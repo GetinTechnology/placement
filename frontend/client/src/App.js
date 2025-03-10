@@ -16,6 +16,7 @@ import ResetPassword from "./pages/Authentication/ResetPassword";
 import CSVUpload from "./pages/Portal/tportal/configuration/Questionmanager/CsvUpload";
 import StudentRegister from "./pages/Authentication/StudentRegister";
 import StudentLogin from "./pages/Authentication/StudentLogin";
+import StudentTestPage from "./pages/studentTest/StudentTestPage";
 
 function App() {
     return (
@@ -40,6 +41,7 @@ function App() {
                     <Route path="/verify_reset_code" element={<VerifyReset/>}/>
                     <Route path="/reset_password" element={<ResetPassword/>}/>
                     <Route path="/configuration/:id" element={<Configuration />} />
+                    <Route path="/test/:testId" element={<StudentTestPage />} />
                     </Routes>
             </Router>
         </div>

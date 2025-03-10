@@ -88,7 +88,51 @@ def test(request, test_id=None):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) 
+
+
+@api_view(['PATCH'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def activate_test(request, test_id):
+    try:
+        test = Test.objects.get(id=test_id, created_by=request.user)
+    except Test.DoesNotExist:
+        return Response({"error": "Test not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    test_active, created = TestActive.objects.get_or_create(test=test)
+
+    test_active.is_active = True
+    test_active.activated_at = now()
+    test_active.expires_at = now() + timedelta(hours=1)  # Auto-expire after 1 hour
+    test_active.save()
+
+    serializer = TestActiveSerializer(test_active)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def deactivate_test(request, test_id):
+    try:
+        test_active = TestActive.objects.get(test__id=test_id)
+    except TestActive.DoesNotExist:
+        return Response({"error": "Test not active"}, status=status.HTTP_404_NOT_FOUND)
+
+    test_active.delete()
+    return Response({"message": "Test deactivated"}, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_test_status(request, test_id):
+    try:
+        test_active = TestActive.objects.get(test__id=test_id)
+        serializer = TestActiveSerializer(test_active)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except TestActive.DoesNotExist:
+        return Response({"is_active": False}, status=status.HTTP_200_OK)
+
 
 
 @api_view(['DELETE'])
@@ -335,7 +379,7 @@ def get_test_details(request, test_id):
         # Prepare the final response
         response_data = {
             "test_id": test.id,
-            "test_name": test.test_name,
+            "test_name": test.name,
             "description": test.description,
             "category": test.category.name if test.category else None,
             "questions": question_list
@@ -380,14 +424,12 @@ def submit_test(request, test_id):
     return Response({"message": "Test submitted successfully!"}, status=201)
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def generate_test_link(request, test_id):
     user = request.user
 
-    attempt, created = TestAttempt.objects.get_or_create(student=user, test_id=test_id)
-
-    return Response({"test_link": f"http://localhost:3000/test/{attempt.attempt_uuid}/"}, status=200)
+    return Response({"test_link": f"http://localhost:3000/test/{test_id}/"}, status=200)
 
 
 @api_view(['GET'])
@@ -403,3 +445,24 @@ def check_submission_status(request, test_id):
 
 
 
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def create_test_set(request, test_id):
+    """Creates or updates a test set with order type & pagination setting."""
+    try:
+        test = Test.objects.get(id=test_id, created_by=request.user)
+    except Test.DoesNotExist:
+        return Response({"error": "Test not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    order_type = request.data.get("order_type", "fixed")
+    questions_per_page = int(request.data.get("questions_per_page", 5))
+
+    test_set, created = TestSet.objects.get_or_create(test=test, defaults={'order_type': order_type, 'questions_per_page': questions_per_page})
+    if not created:
+        test_set.order_type = order_type
+        test_set.questions_per_page = questions_per_page
+        test_set.save()
+
+    serializer = TestSetSerializer(test_set)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)

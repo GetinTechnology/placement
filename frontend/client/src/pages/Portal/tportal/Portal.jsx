@@ -5,7 +5,7 @@ import { Container, Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { Unstable_Popup as BasePopup } from '@mui/base/Unstable_Popup';
 import { styled } from '@mui/system';
-
+import { fetchTestStatus } from '../../../api';
 
 function Portal() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -13,6 +13,8 @@ function Portal() {
   const [anchor, setAnchor] = React.useState(null);
   const [categories, setCategories] = useState(['uncategorized']);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [isActive, setIsActive] = useState(false);
+  
 
   const handlecatpop = (event) => {
     setAnchor(anchor ? null : event.currentTarget);
@@ -98,6 +100,26 @@ function Portal() {
 
     fetchCategories();
   }, []);
+
+  useEffect(()=>{
+    tests.map((test=>{
+      const checkTestStatus = async () => {
+        try {
+          const token = localStorage.getItem('authToken'); // Retrieve token from localStorage
+            const statusData = await fetchTestStatus(test.id,token);
+            setIsActive(statusData.is_active);
+    
+         
+        } catch (error) {
+          console.error("Failed to fetch test status", error);
+        }
+      };
+  
+     return checkTestStatus();
+    }))
+    console.log(isActive)
+  },[])
+
 
   const grey = {
     50: '#F3F6F9',
@@ -223,7 +245,7 @@ function Portal() {
                     <div className="t-box">
                       <div className="t-box1">
                         <div>
-                          <button>{test.is_active ? "Active" : "Inactive"}</button>
+                          <button>{isActive ? "Active" : "Inactive"}</button>
                           <p style={{ margin: '0px', color: 'gray', fontWeight: 700 }}>
                             Created: {new Date(test.created_at).toLocaleDateString()}
                           </p>

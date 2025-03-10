@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.conf import settings
 import uuid
+from datetime import timedelta
+from django.utils.timezone import now
+import random
 
 User = get_user_model()
 
@@ -14,9 +17,19 @@ class Test(models.Model):
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tests',null=True)  
-
     def __str__(self):
         return self.name
+
+class TestActive(models.Model):
+    test = models.OneToOneField(Test, on_delete=models.CASCADE, related_name="active_status")
+    is_active = models.BooleanField(default=False)
+    activated_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.is_active and not self.expires_at:
+            self.expires_at = now() + timedelta(hours=1)  # Auto-expire after 1 hour
+        super().save(*args, **kwargs)
 
 class Question(models.Model):
     SINGLE_CHOICE = "single_choice"
@@ -68,3 +81,28 @@ class StudentResponse(models.Model):
 
     def __str__(self):
         return f"{self.attempt.student.email} - {self.question.text}"
+    
+
+class TestSet(models.Model):
+    ORDER_TYPE_CHOICES = [
+        ('fixed', 'Fixed Order'),
+        ('shuffle', 'Shuffle Questions & Answers'),
+    ]
+    
+    test = models.OneToOneField('Test', on_delete=models.CASCADE, related_name="test_set")
+    order_type = models.CharField(max_length=10, choices=ORDER_TYPE_CHOICES, default='fixed')
+    questions_per_page = models.IntegerField(default=5)  # Controls how many questions appear per page
+
+    def get_questions(self):
+        """Returns questions based on order type."""
+        questions = list(self.test.questions.all())
+        if self.order_type == 'shuffle':
+            random.shuffle(questions)
+        return questions
+
+    def get_answers(self, question):
+        """Returns answers for a question based on order type."""
+        answers = list(question.answers.all())
+        if self.order_type == 'shuffle':
+            random.shuffle(answers)
+        return answers

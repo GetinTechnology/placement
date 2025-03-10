@@ -17,7 +17,10 @@ import UpdateTestPage from "./Update";
 import QuestionManager from "./Questionmanager/QuestionManager";
 import QuestionList from "./Questionmanager/QuestionList";
 import CSVUploads from "./Questionmanager/CsvUpload";  // Import CSV upload component
-import axios from "axios";
+import axios from "axios";  
+import { activateTest, deactivateTest, fetchTestStatus } from "../../../../api";
+import TestSetConfig from "./TestSet";
+
 
 function Configuration() {
   const { id } = useParams();
@@ -30,11 +33,15 @@ function Configuration() {
   const [questionMode, setQuestionMode] = useState(null);  // Track CSV or Scratch
   const [showQuestionList, setShowQuestionList] = useState(false);
   const [questions, setQuestions] = useState([]);
+  const [link,setLink] = useState(null)
+  const [isActive, setIsActive] = useState(false);
+  const [expiresAt, setExpiresAt] = useState(null);
 
+  const token = localStorage.getItem("authToken");
   useEffect(() => {
     const fetchTests = async () => {
       try {
-        const token = localStorage.getItem("authToken");
+       
         const response = await fetch("http://127.0.0.1:8000/portal/test", {
           headers: { Authorization: `Token ${token}` },
         });
@@ -58,7 +65,7 @@ function Configuration() {
       setError("");
 
       try {
-        const token = localStorage.getItem("authToken");
+      
         const response = await axios.get(`http://127.0.0.1:8000/portal/test/${id}/questions`, {
           headers: { Authorization: `Token ${token}` },
         });
@@ -72,7 +79,26 @@ function Configuration() {
       }
     };
     fetchQuestions();
+
+    const fetchtestid = async ()=>{
+      try {
+    
+        const response = await axios.get(`http://127.0.0.1:8000/portal/test/${id}/generate_link/`, {
+          headers: { Authorization: `Token ${token}` },
+        });
+
+        setLink(response.data);
+      } catch (error) {
+        console.error(error);
+        setError("Failed to load questions. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchtestid()
   }, [id]);
+
+
 
   const handleAddQuestion = () => {
     setShowQuestionList(true);
@@ -85,7 +111,39 @@ function Configuration() {
     }
   }
 
-  console.log(questions.length)
+  useEffect(() => {
+    const getStatus = async () => {
+      try {
+        const data = await fetchTestStatus(id,token);
+        setIsActive(data.is_active);
+        setExpiresAt(data.expires_at);
+      } catch (error) {
+        console.error("Failed to fetch test status", error);
+      }
+    };
+
+    getStatus();
+  }, [id]);
+
+  const handleActivate = async () => {
+    try {
+      const response = await activateTest(id,token);
+      setIsActive(response.is_active);
+      setExpiresAt(response.expires_at);
+    } catch (error) {
+      console.error("Failed to activate test", error);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    try {
+      await deactivateTest(id,token);
+      setIsActive(false);
+      setExpiresAt(null);
+    } catch (error) {
+      console.error("Failed to deactivate test", error);
+    }
+  };
 
   return (
     <div>
@@ -147,7 +205,15 @@ function Configuration() {
                         {/* Question Manager with Hover Popup */}
 
 
-                        <li>Activate Test</li>
+                        {!isActive ? (
+        <button className="btn btn-success" onClick={handleActivate}>
+          Activate Test
+        </button>
+      ) : (
+        <button className="btn btn-danger" onClick={handleDeactivate}>
+          End Test
+        </button>
+      )}
                       </ul>
                     </div>
                   </div>
@@ -168,6 +234,8 @@ function Configuration() {
                       )}
                     </>
                   )}
+                  {toggle === 'Test Access' && <p>{link.test_link}</p>}
+                  {toggle === 'Test Sets' && <TestSetConfig/>}
                 </Col>
               </Row>
             </Container>

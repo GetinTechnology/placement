@@ -28,3 +28,92 @@ export const forgotPassword = (email) =>
 export const loginStudent = async (email,password) => {
   return axios.post(`${API_URL}/login/student/`,{email,password});
 };
+
+
+
+export const fetchTestDetails = async (testId, token) => {
+  try {
+    const response = await axios.get(`http://127.0.0.1:8000/portal/test/1/details/`, {
+      headers: { Authorization: `Token ${token}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching test details:", error);
+    throw error;
+  }
+};
+
+export const submitTestAnswers = async (testId, answers, token) => {
+  try {
+    const response = await axios.post(
+      `http://127.0.0.1:8000/portal/test/${testId}/submit/`,
+      { responses: answers },
+      { headers: { Authorization: `Token ${token}` } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error submitting test:", error);
+    throw error;
+  }
+};
+
+
+const BASE_URL = "http://127.0.0.1:8000/portal/test/";
+
+export const activateTest = async (testId,token) => {
+  try {
+    const response = await fetch(`${BASE_URL}${testId}/activate/`, {
+      method: "PATCH",
+       headers: { Authorization: `Token ${token}` } 
+      ,
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error activating test:", error);
+    throw error;
+  }
+};
+
+export const deactivateTest = async (testId,token) => {
+  try {
+    const response = await fetch(`${BASE_URL}${testId}/deactivate/`, {
+      method: "PATCH",
+      headers: { Authorization: `Token ${token}` } 
+
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error deactivating test:", error);
+    throw error;
+  }
+};
+
+export const fetchTestStatus = async (testId,token) => {
+  try {
+    const response = await fetch(`${BASE_URL}${testId}/status/`, {
+      method: "GET",
+      headers: { Authorization: `Token ${token}` } 
+      ,
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching test status:", error);
+    throw error;
+  }
+};
+
+
+export const createTestSet = async (testId, orderType, questionsPerPage,token) => {
+  try {
+    const response = await fetch(`${BASE_URL}${testId}/test-set/`, {
+      method: "POST",
+      headers: { Authorization: `Token ${token}` } ,
+      body: JSON.stringify({ order_type: orderType, questions_per_page: questionsPerPage }),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error("Error creating test set:", error);
+    throw error;
+  }
+};
+
