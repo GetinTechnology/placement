@@ -17,38 +17,49 @@ function BasicSettings({ onTestCreated }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  console.log(formData)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('authToken');
     if (!token) {
-      alert('You are not logged in!');
-      return;
+        alert('You are not logged in!');
+        return;
     }
-    try {
-      const response = await fetch('http://localhost:8000/portal/test/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
 
-      if (response.ok) {
+    const payload = {
+        name: formData.name,
+        category: parseInt(formData.category, 10),  // Convert category to integer
+        description: formData.description
+    };
+
+    console.log("Submitting data:", payload); // Debugging
+
+    try {
+        const response = await fetch('http://localhost:8000/portal/test/', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
         const data = await response.json();
-        alert('Test created successfully!');
-        onTestCreated(data);
-        setFormData({ name: '', category: 'uncategorized', description: '' });
-      } else {
-        const errorData = await response.json();
-        alert(errorData.detail || 'Failed to create test.');
-      }
+        console.log("Response Data:", data);
+
+        if (response.ok) {
+            alert('Test created successfully!');
+            onTestCreated(data);
+            setFormData({ name: '', category: 'uncategorized', description: '' });
+        } else {
+            alert(data.error || data.test || 'Failed to create test.');
+        }
     } catch (error) {
-      console.error('Error creating test:', error);
+        console.error('Error creating test:', error);
     }
-  };
+};
+
+
 
   const handleAddCategory = async () => {
     if (newCategory.trim() === '') {

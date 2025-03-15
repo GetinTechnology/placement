@@ -11,37 +11,22 @@ class CategorySerializer(serializers.ModelSerializer):
         
         
 class TestSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)  # Ensure id is read-only
+    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all())  
     category_name = serializers.CharField(source='category.name', read_only=True)
+
     class Meta:
         model = Test
-        fields = ['id', 'name', 'category','category_name', 'description', 'created_at', 'created_by']
-        read_only_fields = ['created_at', 'created_by']
+        fields = ['id', 'name', 'category', 'category_name', 'description', 'created_at', 'created_by']
+        read_only_fields = ['id', 'created_at', 'created_by']  # Ensure id is read-only
 
     def create(self, validated_data):
         request = self.context.get('request')
         if not request or not request.user or not request.user.is_authenticated:
             raise serializers.ValidationError("User must be authenticated.")
-        
+
         validated_data['created_by'] = request.user  # Assign the logged-in user
         return super().create(validated_data)
-
-
-    def create(self, validated_data):
-        request = self.context.get("request")
-        test = self.context.get("test")
-
-        if not request or not request.user.is_authenticated:
-            raise serializers.ValidationError({"created_by": "User authentication required."})
-
-        if not test:
-            raise serializers.ValidationError({"test": "Test ID is required."})
-
-        # Add authenticated user and test instance to validated_data
-        validated_data["created_by"] = request.user
-        validated_data["test"] = test
-
-        # Create and return the TestActive instance
-        return TestActive.objects.create(**validated_data)
 
 
 class TestActiveSerializer(serializers.ModelSerializer):
@@ -117,12 +102,16 @@ class TestSetSerializer(serializers.ModelSerializer):
         fields = ['test', 'order_type', 'questions_per_page', 'questions']
 
     def get_questions(self, obj):
-        request = self.context.get('request')
-        page = int(request.query_params.get('page', 1))
-        questions = obj.get_questions()
+        request = self.context.get('request')  # Get request from context
+        page = int(request.query_params.get('page', 1)) if request else 1  # Default to page 1 if request is None
+
+        questions = obj.get_questions()  # Get all questions
 
         start_index = (page - 1) * obj.questions_per_page
         end_index = start_index + obj.questions_per_page
 
         paginated_questions = questions[start_index:end_index]
         return QuestionSerializer(paginated_questions, many=True, context={'test_set': obj}).data
+
+
+

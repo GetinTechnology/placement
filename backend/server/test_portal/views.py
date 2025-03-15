@@ -62,20 +62,31 @@ def test(request, test_id=None):
         return Response(serializer.data)
 
     elif request.method == 'POST':
+        print("Received Data:", request.data)  # Debugging
+
         category_id = request.data.get('category', None)
 
         if not category_id:
             return Response({'error': 'Category is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            category_id = int(category_id)  # Ensure it's an integer
+        except ValueError:
+            return Response({'error': 'Invalid category format.'}, status=status.HTTP_400_BAD_REQUEST)
 
         category = Category.objects.filter(id=category_id).first()
         if not category:
             return Response({'error': 'Invalid category selection.'}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = TestSerializer(data=request.data, context={'request': request})
+    
+        print("Serializer Initial Data:", serializer.initial_data)  # Debugging
+
         if serializer.is_valid():
-            serializer.save(created_by=request.user, category=category)
+            serializer.save(category=category)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+        print("Serializer Errors:", serializer.errors)  # Debugging
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'PUT':
@@ -347,18 +358,27 @@ def upload_csv(request, test_id):
 @permission_classes([IsAuthenticated])
 def get_test_details(request, test_id):
     """
-    Fetch test details including test name, description, and questions with answer choices.
+    Fetch test details including test name, description, questions with answer choices, and test set details.
     """
     try:
         test = get_object_or_404(Test, id=test_id)
         
+        # Fetch related test set
+        test_set_data = None
+        if hasattr(test, 'test_set'):
+            test_set = test.test_set
+            test_set_data = {
+                "id": test_set.id,
+                "order_type": test_set.order_type,
+                "questions_per_page": test_set.questions_per_page,
+            }
+
         # Fetch questions and their corresponding answers
-        questions = Question.objects.filter(test=test)
-        
-        # Serialize questions and their answers
+        questions = test.questions.all()  # Use related_name if set
         question_list = []
+        
         for question in questions:
-            answers = Answer.objects.filter(question=question)
+            answers = question.answers.all()  # Use related_name if set
             answer_list = [
                 {
                     "id": answer.id,
@@ -382,47 +402,14 @@ def get_test_details(request, test_id):
             "test_name": test.name,
             "description": test.description,
             "category": test.category.name if test.category else None,
-            "questions": question_list
+            "questions": question_list,
+            "test_set": test_set_data  # Included test set details
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
     
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def submit_test(request, test_id):
-    user = request.user
-
-    # Ensure the student has not submitted the test before
-    attempt, created = TestAttempt.objects.get_or_create(student=user, test_id=test_id)
-
-    if attempt.submitted:
-        return Response({"error": "You have already submitted this test."}, status=400)
-
-    responses = request.data.get("responses", [])
-
-    for response in responses:
-        question_id = response.get("question_id")
-        selected_choice_ids = response.get("selected_choice_ids", [])
-        descriptive_answer = response.get("descriptive_answer", "")
-
-        student_response = StudentResponse.objects.create(
-            attempt=attempt, question_id=question_id, descriptive_answer=descriptive_answer
-        )
-
-        
-        student_response.selected_choices.set(selected_choice_ids)
-
-    attempt.submitted = True
-    attempt.save()
-
-    return Response({"message": "Test submitted successfully!"}, status=201)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -432,17 +419,152 @@ def generate_test_link(request, test_id):
     return Response({"test_link": f"http://localhost:3000/test/{test_id}/"}, status=200)
 
 
-@api_view(['GET'])
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def submit_test(request, test_id):
+    """
+    Submits the test, calculates the score dynamically, and stores only the final result.
+    """
+    try:
+        student = request.user
+        test = get_object_or_404(Test, id=test_id)
+
+        # Ensure test attempt exists or create one
+        attempt, created = TestAttempt.objects.get_or_create(
+            test=test, student=student, defaults={"submitted": False}
+        )
+
+        if attempt.submitted:
+            return Response(
+                {"message": "Test already submitted."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print(f"Attempt Found: {attempt}, Created: {created}")
+
+        # Get submitted answers from request
+        submitted_answers = request.data.get("responses", {})  # Expecting a dictionary {question_id: [selected_choice_ids]}
+        print(submitted_answers)
+        
+        score = 0
+        total_marks = 0
+
+        for answer in submitted_answers:
+            question_id = answer.get("question_id")
+            selected_choice_ids = answer.get("selected_choices", [])  # Ensure it's a list
+
+            question = get_object_or_404(Question, id=question_id)
+            correct_answer_ids = set(
+            Answer.objects.filter(question=question, is_correct=True).values_list("id", flat=True)
+            )
+
+            # Calculate score
+            if set(selected_choice_ids) == correct_answer_ids:
+                score += question.points  # Assume each question has a "points" field
+
+            total_marks += question.points
+
+        total_marks = max(total_marks, 1)  #
+
+        # Update or create StudentTestResult
+        result, created = StudentTestResult.objects.update_or_create(
+            attempt=attempt,
+            defaults={
+                "score": score,
+                "total_marks": total_marks,
+                "percentage": (score / total_marks) * 100,
+            },
+        )
+
+        # Mark Attempt as Submitted
+        attempt.submitted = True
+        attempt.save()
+
+        return Response(
+            {
+                "message": "Test submitted successfully!",
+                "score": result.score,
+                "total_marks": result.total_marks,
+                "percentage": result.percentage,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except Exception as e:
+        print(f"Error: {str(e)}")  # Debugging Line
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def check_submission_status(request, test_id):
+    """
+    Check if a student has submitted a test.
+    """
     user = request.user
+    attempt = TestAttempt.objects.filter(student=user, test_id=test_id).first()
+    
+    return Response({"submitted": attempt.submitted if attempt else False}, status=200)
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_student_result(request, test_id):
+    """
+    Fetch the student's test result using test ID.
+    """
     try:
-        attempt = TestAttempt.objects.get(student=user, test_id=test_id)
-        return Response({"submitted": attempt.submitted}, status=200)
-    except TestAttempt.DoesNotExist:
-        return Response({"submitted": False}, status=200)
+        attempt = get_object_or_404(TestAttempt, test_id=test_id, student=request.user)
 
+        if not hasattr(attempt, "result"):
+            return Response(
+                {"message": "Test result not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
+        result = attempt.result
+        responses = StudentResponse.objects.filter(attempt=attempt)
+
+        answer_details = [
+            {
+                "question_id": response.question.id,
+                "question_text": response.question.text,
+                "student_answer": list(
+                    response.selected_choices.values_list("text", flat=True)
+                ),
+                "correct_answer": list(
+                    Answer.objects.filter(
+                        question=response.question, is_correct=True
+                    ).values_list("text", flat=True)
+                ),
+                "is_correct": set(
+                    response.selected_choices.values_list("id", flat=True)
+                )
+                == set(
+                    Answer.objects.filter(
+                        question=response.question, is_correct=True
+                    ).values_list("id", flat=True)
+                ),
+            }
+            for response in responses
+        ]
+
+        return Response(
+            {
+                "test_name": attempt.test.name,
+                "student":attempt.student.email,
+                "score": result.score,
+                "total_marks": result.total_marks,
+                "percentage": result.percentage,
+                "submitted_at": result.submitted_at,
+                "answers": answer_details,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -466,3 +588,6 @@ def create_test_set(request, test_id):
 
     serializer = TestSetSerializer(test_set)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+

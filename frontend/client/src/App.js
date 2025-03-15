@@ -17,6 +17,7 @@ import CSVUpload from "./pages/Portal/tportal/configuration/Questionmanager/CsvU
 import StudentRegister from "./pages/Authentication/StudentRegister";
 import StudentLogin from "./pages/Authentication/StudentLogin";
 import StudentTestPage from "./pages/studentTest/StudentTestPage";
+import StudentResult from "./pages/studentTest/StudentResult";
 
 function App() {
     return (
@@ -42,6 +43,8 @@ function App() {
                     <Route path="/reset_password" element={<ResetPassword/>}/>
                     <Route path="/configuration/:id" element={<Configuration />} />
                     <Route path="/test/:testId" element={<StudentTestPage />} />
+                    <Route path="/result/:testId" element={<StudentResult />} />
+
                     </Routes>
             </Router>
         </div>

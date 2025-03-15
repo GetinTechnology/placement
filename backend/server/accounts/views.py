@@ -92,7 +92,7 @@ def login_view(request):
 
 
 
-# Verify Code and Access Portal (Step 2)
+# Verify Code and Access Portal 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def verify_code(request):
@@ -105,7 +105,7 @@ def verify_code(request):
         if user.verification_code != code:
             return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Clear verification code and mark email as verified
+        
         user.verification_code = ''
         user.is_verified = True
         user.save()

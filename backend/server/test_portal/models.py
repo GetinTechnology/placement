@@ -69,8 +69,26 @@ class TestAttempt(models.Model):
     attempt_uuid = models.UUIDField(default=uuid.uuid4, unique=True)
     submitted = models.BooleanField(default=False)
 
-    def __str__(self):
-        return f"{self.student.email} - {self.test.title} ({self.attempt_uuid})"
+    def calculate_score(self):
+        total_score = 0
+        total_marks = 0
+        responses = self.responses.all()
+
+        if not responses.exists():  # If no responses, return 0 safely
+            return 0, 1  # Avoid division by zero in percentage calculation
+
+        for response in responses:
+            question = response.question
+            correct_answers = set(question.answers.filter(is_correct=True).values_list("id", flat=True))
+            selected_answers = set(response.selected_choices.values_list("id", flat=True))
+
+            if correct_answers == selected_answers:
+                total_score += question.points  # Assign points only if the answer is correct
+        
+            total_marks += question.points  # Sum total possible marks
+
+        return total_score, total_marks
+
 
 
 class StudentResponse(models.Model):
@@ -81,6 +99,19 @@ class StudentResponse(models.Model):
 
     def __str__(self):
         return f"{self.attempt.student.email} - {self.question.text}"
+
+class StudentTestResult(models.Model):
+    attempt = models.OneToOneField(TestAttempt, on_delete=models.CASCADE, related_name="result")
+    score = models.FloatField(default=0)
+    total_marks = models.FloatField(default=0)
+    percentage = models.FloatField(default=0)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def calculate_percentage(self):
+        return (self.score / self.total_marks) * 100
+
+    def __str__(self):
+        return f"Result: {self.attempt.student.username} - {self.attempt.test.name}"
     
 
 class TestSet(models.Model):
@@ -106,3 +137,8 @@ class TestSet(models.Model):
         if self.order_type == 'shuffle':
             random.shuffle(answers)
         return answers
+    
+
+
+
+

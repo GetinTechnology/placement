@@ -48,7 +48,11 @@ export const submitTestAnswers = async (testId, answers, token) => {
     const response = await axios.post(
       `http://127.0.0.1:8000/portal/test/${testId}/submit/`,
       { responses: answers },
-      { headers: { Authorization: `Token ${token}` } }
+      { headers: { Authorization: `Token ${token}`,
+      "Content-Type": "application/json", 
+
+     } },
+      
     );
     return response.data;
   } catch (error) {
@@ -107,7 +111,8 @@ export const createTestSet = async (testId, orderType, questionsPerPage,token) =
   try {
     const response = await fetch(`${BASE_URL}${testId}/test-set/`, {
       method: "POST",
-      headers: { Authorization: `Token ${token}` } ,
+      headers: { Authorization: `Token ${token}`,
+    "Content-Type": "application/json" } ,
       body: JSON.stringify({ order_type: orderType, questions_per_page: questionsPerPage }),
     });
     return await response.json();

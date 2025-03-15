@@ -1,25 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchTestDetails, submitTestAnswers } from "../../api";
+import { fetchTestDetails, submitTestAnswers, fetchTestStatus } from "../../api";
 import { Toast, ToastContainer } from "react-bootstrap";
-import { fetchTestStatus } from "../../api";
 
 const StudentTestPage = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
-  const [test, setTest] = useState({questions:[]});
+  const [test, setTest] = useState({ questions: [], test_set: {} });
   const [responses, setResponses] = useState({});
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isActive, setIsActive] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+
   const token = localStorage.getItem("studentToken");
 
   useEffect(() => {
     const checkTestStatus = async () => {
       try {
-        const statusData = await fetchTestStatus(testId,token);
+        const statusData = await fetchTestStatus(testId, token);
         setIsActive(statusData.is_active);
       } catch (error) {
         console.error("Failed to fetch test status", error);
@@ -33,10 +35,22 @@ const StudentTestPage = () => {
     const loadTest = async () => {
       try {
         const testData = await fetchTestDetails(testId, token);
-        setTest(testData);
+        let questions = testData.questions;
+
+        // Check test_set settings
+        if (testData.test_set) {
+          if (testData.test_set.order_type === "shuffle") {
+            questions = [...questions].sort(() => Math.random() - 0.5);
+            questions.forEach((q) => {
+              q.answers = [...q.answers].sort(() => Math.random() - 0.5);
+            });
+          }
+        }
+
+        setTest({ ...testData, questions });
 
         const initialResponses = {};
-        testData.questions.forEach((q) => {
+        questions.forEach((q) => {
           if (q.question_type === "single_choice") {
             initialResponses[q.id] = null;
           } else if (q.question_type === "multiple_choice") {
@@ -57,7 +71,7 @@ const StudentTestPage = () => {
     if (isActive) {
       loadTest();
     }
-  }, [testId,isActive]);
+  }, [testId, isActive]);
 
   const handleChange = (questionId, value, isMultiple = false) => {
     setResponses((prev) => {
@@ -75,7 +89,7 @@ const StudentTestPage = () => {
     try {
       const formattedResponses = Object.keys(responses).map((questionId) => ({
         question_id: questionId,
-        selected_choice_ids: Array.isArray(responses[questionId])
+        selected_choices: Array.isArray(responses[questionId])
           ? responses[questionId]
           : responses[questionId] !== null
           ? [responses[questionId]]
@@ -83,14 +97,23 @@ const StudentTestPage = () => {
         descriptive_answer:
           typeof responses[questionId] === "string" ? responses[questionId] : "",
       }));
-
+  
+      console.log("Submitting Responses:", JSON.stringify(formattedResponses, null, 2)); // 🔥 DEBUG HERE
+  
       await submitTestAnswers(testId, formattedResponses, token);
       setSubmitted(true);
       setShowToast(true);
+  
+      setTimeout(() => {
+        navigate(`/result/${testId}`);
+      }, 3000);
     } catch (error) {
       console.error("Error submitting test:", error);
+      alert(error.response?.data?.message || "Failed to submit test");
     }
   };
+  
+
   if (!isActive) {
     return (
       <div className="text-center mt-5">
@@ -99,8 +122,17 @@ const StudentTestPage = () => {
       </div>
     );
   }
-  
+
   if (loading) return <div className="text-center mt-5"><h5>Loading test...</h5></div>;
+
+  // Pagination logic
+  const questionsPerPage = test.test_set?.questions_per_page || 1;
+  const totalQuestions = test.questions.length;
+  const totalPages = Math.ceil(totalQuestions / questionsPerPage);
+
+  const startIdx = (currentPage - 1) * questionsPerPage;
+  const endIdx = startIdx + questionsPerPage;
+  const currentQuestions = test.questions.slice(startIdx, endIdx);
 
   return (
     <div className="container mt-5">
@@ -117,7 +149,7 @@ const StudentTestPage = () => {
           <h1 className="mb-3">{test.name}</h1>
           <p className="text-muted">{test.description}</p>
 
-          {test.questions?.map((question) => (
+          {currentQuestions.map((question) => (
             <div key={question.id} className="card mb-3 p-3">
               <h5>{question.text}</h5>
 
@@ -161,7 +193,25 @@ const StudentTestPage = () => {
             </div>
           ))}
 
-          <button className="btn btn-success w-100" onClick={handleSubmit}>
+          {/* Pagination Buttons */}
+          <div className="d-flex justify-content-between">
+            <button
+              className="btn btn-secondary"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
+              Previous
+            </button>
+            <button
+              className="btn btn-secondary"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              Next
+            </button>
+          </div>
+
+          <button className="btn btn-success w-100 mt-3" onClick={handleSubmit}>
             Submit Test
           </button>
         </>
