@@ -21,5 +21,9 @@ urlpatterns = [
     path('test/<int:test_id>/deactivate/', views.deactivate_test, name='deactivate-test'),
     path('test/<int:test_id>/status/', views.get_test_status, name='test-status'),
     path('test/<int:test_id>/test-set/', views.create_test_set, name='create-test-set'),
+    path('test/<int:test_id>/all_results',views.get_all_students_results,name='get_all_students_results'),
+    path('test/test_result',views.get_test_results,name='get_test_results'),
+    path('pending-evaluations/<int:test_id>/',views.get_pending_evaluations,name='get_pending_evaluations'),
+    path('evaluate-answers/',views.evaluate_answers,name='evaluate_answers')
      
 ]

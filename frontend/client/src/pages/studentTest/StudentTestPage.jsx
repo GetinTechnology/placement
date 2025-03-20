@@ -112,7 +112,7 @@ const StudentTestPage = () => {
       alert(error.response?.data?.message || "Failed to submit test");
     }
   };
-  
+  console.log(isActive)
 
   if (!isActive) {
     return (

@@ -29,3 +29,11 @@
     border: none;
     color: #fff;
 }
+
+.social{
+    margin-left:2rem;
+}
+.links{
+    display: flex;
+    gap: 30px;
+}

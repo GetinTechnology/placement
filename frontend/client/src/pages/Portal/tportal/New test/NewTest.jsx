@@ -11,7 +11,7 @@ import {
     HomeOutlined as HomeIcon,
     AccessTimeOutlined as TimeIcon,
     EventNoteOutlined as EventIcon,
-  } from "@mui/icons-material";
+  } from "@mui/icons-material"
 function NewTest() {
     const [isCollapsed, setIsCollapsed] = useState(true);
     return (

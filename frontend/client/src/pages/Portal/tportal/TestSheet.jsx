@@ -12,9 +12,11 @@ const TestAttendingPage = () => {
   useEffect(() => {
     axios.get(`/portal/tests/${testId}`)
       .then(response => setTest(response.data))
+      console.log(test)
       .catch(error => console.error("Error fetching test details", error));
   }, [testId]);
 
+  
   const handleAnswerChange = (questionId, value) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };

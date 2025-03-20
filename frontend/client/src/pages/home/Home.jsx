@@ -21,6 +21,7 @@ import PlacedStudent from './PlacedStudent'
 import Gallary from './Gallary'
 import Jobs from './Jobs'
 import Review from './Review'
+import Footer from '../../components/Footer'
 
 const traingcourse = [
   {
@@ -258,25 +259,11 @@ function Home() {
           </Row>
         </Container>
       </div>
-      <Container>
-        <Row>
-          <Col className='placed-box'>
-            <h4>Placed Students at Getin Technologies</h4>
-            <p>We at Getin Technologies Institute are proud to mold the careers of the next generation IT professionals. Our rigorous training programs, live projects, and expert guidance have placed many students in the most sought-after IT firms.
 
-              Strong placement assistance scheme with us ensures that our students are well-equipped to meet industry requirements. Our alumni have achieved success in beginning their careers across different fields such as Web Development, Software Engineering, Data Science, Cybersecurity, and Cloud Computing.
-
-              Be part of Getin Technologies and you have taken the first step towards a successful career in IT!</p>
-          </Col>
-          <Col>
-            <PlacedStudent />
-
-          </Col>
-        </Row>
-      </Container>
           <Gallary/>
           <Jobs/>
           <Review/>
+          <Footer/>
     </div>
   )
 }

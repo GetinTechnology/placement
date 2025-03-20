@@ -33,7 +33,7 @@ export const loginStudent = async (email,password) => {
 
 export const fetchTestDetails = async (testId, token) => {
   try {
-    const response = await axios.get(`http://127.0.0.1:8000/portal/test/1/details/`, {
+    const response = await axios.get(`http://127.0.0.1:8000/portal/test/${testId}/details/`, {
       headers: { Authorization: `Token ${token}` },
     });
     return response.data;

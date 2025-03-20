@@ -590,4 +590,173 @@ def create_test_set(request, test_id):
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_all_students_results(request, test_id):
+    """
+    Fetches test results for all students who attempted the given test.
+    """
+    try:
+        # Get all test attempts for the given test ID
+        attempts = TestAttempt.objects.filter(test_id=test_id, submitted=True).select_related("student")
+
+        if not attempts.exists():
+            return Response(
+                {"message": "No test results found for this test."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Gather results for each student
+        all_results = []
+        for attempt in attempts:
+            if not hasattr(attempt, "result"):
+                continue  # Skip attempts without results
+
+            result = attempt.result
+            responses = StudentResponse.objects.filter(attempt=attempt)
+
+            answer_details = [
+                {
+                    "question_id": response.question.id,
+                    "question_text": response.question.text,
+                    "student_answer": list(
+                        response.selected_choices.values_list("text", flat=True)
+                    ),
+                    "correct_answer": list(
+                        Answer.objects.filter(
+                            question=response.question, is_correct=True
+                        ).values_list("text", flat=True)
+                    ),
+                    "is_correct": set(
+                        response.selected_choices.values_list("id", flat=True)
+                    )
+                    == set(
+                        Answer.objects.filter(
+                            question=response.question, is_correct=True
+                        ).values_list("id", flat=True)
+                    ),
+                }
+                for response in responses
+            ]
+
+            all_results.append({
+                "student_name": attempt.student.get_full_name() or attempt.student.username,
+                "student_email": attempt.student.email,
+                "test_name": attempt.test.name,
+                "score": result.score,
+                "total_marks": result.total_marks,
+                "percentage": result.percentage,
+                "submitted_at": result.submitted_at,
+                "answers": answer_details,
+            })
+
+        return Response({"results": all_results}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_test_results(request):
+    """
+    Fetch all students' test results across all tests.
+    """
+    try:
+        results = StudentTestResult.objects.select_related("attempt__student", "attempt__test")
+
+        results_data = [
+            {
+                "student_name": result.attempt.student.username,
+                "student_email": result.attempt.student.email,
+                "test_name": result.attempt.test.name,
+                "score": result.score,
+                "total_marks": result.total_marks,
+                "percentage": result.percentage,
+                "submitted_at": result.submitted_at,
+            }
+            for result in results
+        ]
+
+        return Response({"results": results_data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_pending_evaluations(request, test_id):
+    """
+    Fetch all student responses for a test where grading is needed (descriptive and single-choice).
+    """
+    try:
+        attempts = TestAttempt.objects.filter(test_id=test_id, submitted=True)
+        pending_evaluations = []
+
+        for attempt in attempts:
+            responses = StudentResponse.objects.filter(attempt=attempt)
+
+            for response in responses:
+                question = response.question
+
+                # Fetch descriptive answers and single-answer questions
+                if question.answer_type in ["descriptive", "single"]:
+                    pending_evaluations.append({
+                        "attempt_id": attempt.id,
+                        "student_name": attempt.student.username,
+                        "student_email": attempt.student.email,
+                        "question_id": question.id,
+                        "question_text": question.text,
+                        "answer_type": question.answer_type,
+                        "student_answer": response.descriptive_answer if question.answer_type == "descriptive" else list(response.selected_choices.values_list("text", flat=True)),
+                        "correct_answer": list(Answer.objects.filter(question=question, is_correct=True).values_list("text", flat=True)) if question.answer_type == "single" else "Manual Grading Required",
+                        "is_correct": None if question.answer_type == "descriptive" else set(response.selected_choices.values_list("id", flat=True)) == set(Answer.objects.filter(question=question, is_correct=True).values_list("id", flat=True))
+                    })
+
+        return Response({"pending_evaluations": pending_evaluations}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def evaluate_answers(request):
+    """
+    API to submit marks for descriptive answers.
+    """
+    try:
+        evaluations = request.data.get("evaluations", [])
+
+        for evaluation in evaluations:
+            attempt = get_object_or_404(TestAttempt, id=evaluation["attempt_id"])
+            response = get_object_or_404(StudentResponse, attempt=attempt, question_id=evaluation["question_id"])
+
+            # Store marks for descriptive answers
+            if response.question.answer_type == "descriptive":
+                response.marks_awarded = evaluation["marks_awarded"]
+                response.save()
+
+            # Update test result if necessary
+            attempt_result, _ = StudentTestResult.objects.get_or_create(attempt=attempt)
+            total_marks = sum([resp.question.points for resp in attempt.responses.all()])
+            total_score = sum([resp.marks_awarded for resp in attempt.responses.all() if resp.marks_awarded is not None])
+
+            attempt_result.score = total_score
+            attempt_result.total_marks = total_marks
+            attempt_result.percentage = (total_score / total_marks) * 100 if total_marks > 0 else 0
+            attempt_result.save()
+
+        return Response({"message": "Evaluations submitted successfully!"}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

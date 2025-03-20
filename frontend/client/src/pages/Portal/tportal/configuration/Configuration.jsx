@@ -22,6 +22,7 @@ import { activateTest, deactivateTest, fetchTestStatus } from "../../../../api";
 import TestSetConfig from "./TestSet";
 import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
 import ResultTable from "../../../studentTest/ResultTable";
+import EvaluateTest from "../../../studentTest/EvaluateTest";
 
 
 function Configuration() {
@@ -36,6 +37,10 @@ function Configuration() {
   const [isActive, setIsActive] = useState(false);
   const [expiresAt, setExpiresAt] = useState(null);
   const [expiryHours, setExpiryHours] = useState(1); // Default expiry time
+  const [showQuestionPopup, setShowQuestionPopup] = useState(false);
+  const [questionMode, setQuestionMode] = useState(null);  // Track CSV or Scratch
+  const [showQuestionList, setShowQuestionList] = useState(false);
+
 
   const token = localStorage.getItem("authToken");
 
@@ -95,6 +100,10 @@ function Configuration() {
     getStatus();
   }, [id]);
 
+  const handleAddQuestion = () => {
+    setShowQuestionList(true);
+  };
+
   const handleActivate = async () => {
     try {
       const response = await activateTest(id, token, expiryHours);
@@ -142,8 +151,21 @@ function Configuration() {
                     <p>Test Configuration</p>
                     <div className="cmain-c-box2">
                       <ul>
-                        <li>
+                      <li
+                          onMouseEnter={() => setShowQuestionPopup(true)}
+                          onMouseLeave={() => setShowQuestionPopup(false)}
+                        >
                           <QuizIcon className="c-icon" /> Question Manager
+                          {showQuestionPopup && (
+                            <div className="question-popup">
+                              <button onClick={() => { setToggle("Question Manager"); setQuestionMode("CSV"); }}>
+                                CSV Upload
+                              </button>
+                              <button onClick={() => { setToggle("Question Manager"); setQuestionMode("Scratch"); }}>
+                                Scratch
+                              </button>
+                            </div>
+                          )}
                         </li>
                         {[
                           ["Basic Settings", <SettingsIcon className="c-icon" />],
@@ -162,7 +184,7 @@ function Configuration() {
                       {/* Expiry Time Input Before Activation */}
                       {!isActive ? (
                         <div>
-                          <label>Expiry Time (Hours):</label>
+                          <label>Expiry Time (Hours)</label>
                           <input
                             type="number"
                             min="1"
@@ -188,6 +210,10 @@ function Configuration() {
                           <AnalyticsOutlinedIcon className="c-icon" /> 
                           Result Table
                         </li>
+                        <li onClick={() => setToggle('evaluvation')}>
+                          <AnalyticsOutlinedIcon className="c-icon" /> 
+                          Answers
+                        </li>
                       </ul>
                   </div>
                 </Col>
@@ -196,9 +222,20 @@ function Configuration() {
                 <Col lg={9}>
                   {toggle === "test_info" && <TestInfo />}
                   {toggle === "Basic Settings" && <UpdateTestPage />}
+                  {toggle === "Question Manager" && (
+                    <>
+                      {questionMode === "CSV" ? (
+                        questions.length === 0 ?<CSVUploads testId={test.id} /> : <QuestionList />
+                      ) : (
+                        questions.length === 0 ?<QuestionManager onAddQuestion={handleAddQuestion} /> : <QuestionList />
+                      )}
+                    </>
+                  )}
+
                   {toggle === "Test Sets" && <TestSetConfig testId={id} />}
                   {toggle === "Test Access" && <p>{link?.test_link}</p>}
-                  {toggle === "Result Table" && <ResultTable/>}
+                  {toggle === "Result Table" && <ResultTable testId={id}/>}
+                  {toggle === "evaluvation" && <EvaluateTest testId={id}/>}
                 </Col>
               </Row>
             </Container>

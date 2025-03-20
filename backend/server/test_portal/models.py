@@ -60,7 +60,7 @@ class Question(models.Model):
 
 class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers")
-    text = models.CharField(max_length=255)
+    text = models.CharField(max_length=255,blank=True)
     is_correct = models.BooleanField(default=False)
 
 class TestAttempt(models.Model):
