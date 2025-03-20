@@ -73,32 +73,42 @@ const StudentTestPage = () => {
     }
   }, [testId, isActive]);
 
-  const handleChange = (questionId, value, isMultiple = false) => {
-    setResponses((prev) => {
-      if (isMultiple) {
-        const newValues = prev[questionId].includes(value)
-          ? prev[questionId].filter((v) => v !== value)
-          : [...prev[questionId], value];
-        return { ...prev, [questionId]: newValues };
-      }
+const handleChange = (questionId, value, isMultiple = false) => {
+  setResponses((prev) => {
+    if (isMultiple) {
+      const newValues = prev[questionId].includes(value)
+        ? prev[questionId].filter((v) => v !== value)
+        : [...prev[questionId], value];
+      return { ...prev, [questionId]: newValues };
+    } else if (typeof prev[questionId] === "string") {
+      // If it's a descriptive answer, store as a string
       return { ...prev, [questionId]: value };
-    });
-  };
+    }
+    return { ...prev, [questionId]: value };
+  });
+};
 
   const handleSubmit = async () => {
     try {
-      const formattedResponses = Object.keys(responses).map((questionId) => ({
-        question_id: questionId,
-        selected_choices: Array.isArray(responses[questionId])
-          ? responses[questionId]
-          : responses[questionId] !== null
-          ? [responses[questionId]]
-          : [],
-        descriptive_answer:
-          typeof responses[questionId] === "string" ? responses[questionId] : "",
-      }));
+      const formattedResponses = Object.keys(responses).map((questionId) => {
+        const question = test.questions.find((q) => q.id === parseInt(questionId));
   
-      console.log("Submitting Responses:", JSON.stringify(formattedResponses, null, 2)); // 🔥 DEBUG HERE
+        return {
+          question_id: parseInt(questionId),
+          selected_choices:
+            question.question_type === "multiple_choice"
+              ? responses[questionId] // Keep array for multiple choice
+              : question.question_type === "single_choice"
+              ? [responses[questionId]] // Wrap single choice in an array
+              : [], // Empty array for descriptive
+          descriptive_answer:
+            question.question_type === "descriptive"
+              ? responses[questionId] // Store answer as a string
+              : "",
+        };
+      });
+  
+      console.log("Submitting Responses:", JSON.stringify(formattedResponses, null, 2)); 
   
       await submitTestAnswers(testId, formattedResponses, token);
       setSubmitted(true);
@@ -112,6 +122,7 @@ const StudentTestPage = () => {
       alert(error.response?.data?.message || "Failed to submit test");
     }
   };
+  
   console.log(isActive)
 
   if (!isActive) {

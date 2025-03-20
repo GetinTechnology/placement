@@ -424,7 +424,8 @@ def generate_test_link(request, test_id):
 @permission_classes([IsAuthenticated])
 def submit_test(request, test_id):
     """
-    Submits the test, calculates the score dynamically, and stores only the final result.
+    Submits the test, calculates the score for auto-graded questions,
+    and stores descriptive answers for manual evaluation.
     """
     try:
         student = request.user
@@ -435,54 +436,71 @@ def submit_test(request, test_id):
             test=test, student=student, defaults={"submitted": False}
         )
 
-        if attempt.submitted:
-            return Response(
-                {"message": "Test already submitted."}, status=status.HTTP_400_BAD_REQUEST
-            )
-
         print(f"Attempt Found: {attempt}, Created: {created}")
 
         # Get submitted answers from request
-        submitted_answers = request.data.get("responses", {})  # Expecting a dictionary {question_id: [selected_choice_ids]}
+        submitted_answers = request.data.get("responses", [])  # Expecting a list of answer dictionaries
         print(submitted_answers)
-        
+
         score = 0
         total_marks = 0
 
         for answer in submitted_answers:
             question_id = answer.get("question_id")
-            selected_choice_ids = answer.get("selected_choices", [])  # Ensure it's a list
+            selected_choice_ids = answer.get("selected_choices", [])  # List of choice IDs
+            descriptive_answer = answer.get("descriptive_answer", "").strip()  # Descriptive answer
 
             question = get_object_or_404(Question, id=question_id)
+
+            # Retrieve correct answer(s)
             correct_answer_ids = set(
-            Answer.objects.filter(question=question, is_correct=True).values_list("id", flat=True)
+                Answer.objects.filter(question=question, is_correct=True).values_list("id", flat=True)
             )
 
-            # Calculate score
-            if set(selected_choice_ids) == correct_answer_ids:
-                score += question.points  # Assume each question has a "points" field
+            # Create a response object
+            response = StudentResponse.objects.create(attempt=attempt, question=question)
 
-            total_marks += question.points
+            if question.question_type in ["single_choice", "true_false"]:
+                # Store the selected choice
+                response.selected_choices.set(selected_choice_ids)
 
-        total_marks = max(total_marks, 1)  #
+                # Validate if the selected choice matches the correct answer
+                if set(selected_choice_ids) == correct_answer_ids:
+                    score += question.points
 
-        # Update or create StudentTestResult
+                total_marks += question.points
+
+            elif question.question_type == "multiple_choice":
+                # Store selected choices
+                response.selected_choices.set(selected_choice_ids)
+
+                # Score based on correct selection
+                if set(selected_choice_ids) == correct_answer_ids:
+                    score += question.points  # Full points only if all correct answers are selected
+
+                total_marks += question.points
+
+            elif question.question_type in ["descriptive", "short_answer", "survey"]:
+                # Store descriptive response for manual grading
+                response.descriptive_answer = descriptive_answer
+                response.marks_awarded = None  # Needs manual grading
+                response.save()
+
+                total_marks += question.points  # Marks will be awarded after review
+
+        # Save initial result without descriptive answers
+        total_marks = max(total_marks, 1)  # Avoid division by zero
         result, created = StudentTestResult.objects.update_or_create(
             attempt=attempt,
-            defaults={
-                "score": score,
-                "total_marks": total_marks,
-                "percentage": (score / total_marks) * 100,
-            },
+            defaults={"score": score, "total_marks": total_marks, "percentage": (score / total_marks) * 100},
         )
 
-        # Mark Attempt as Submitted
         attempt.submitted = True
         attempt.save()
 
         return Response(
             {
-                "message": "Test submitted successfully!",
+                "message": "Test submitted successfully! Descriptive answers need manual grading.",
                 "score": result.score,
                 "total_marks": result.total_marks,
                 "percentage": result.percentage,
@@ -493,6 +511,7 @@ def submit_test(request, test_id):
     except Exception as e:
         print(f"Error: {str(e)}")  # Debugging Line
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 
@@ -689,71 +708,62 @@ def get_test_results(request):
 
 
 
-@api_view(["GET"])
+@api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_pending_evaluations(request, test_id):
-    """
-    Fetch all student responses for a test where grading is needed (descriptive and single-choice).
-    """
+def get_unanswered_descriptive_responses(request, test_id):
+    user = request.user  # Get the logged-in student
+
+    # Check if the student has an active attempt for this test
     try:
-        attempts = TestAttempt.objects.filter(test_id=test_id, submitted=True)
-        pending_evaluations = []
+        attempt = TestAttempt.objects.get(test_id=test_id, student=user)
+        
+    except TestAttempt.DoesNotExist:
+        return Response({"error": "No test attempt found for this student."}, status=404)
 
-        for attempt in attempts:
-            responses = StudentResponse.objects.filter(attempt=attempt)
+    # Get all descriptive questions in the test
+    descriptive_questions = Question.objects.filter(test_id=test_id, question_type="descriptive")
+    print(descriptive_questions)
+    answered_question_ids = StudentResponse.objects.filter(
+        attempt=attempt,
+        question__question_type="descriptive"
+    ).values_list("question_id", flat=True)
+    print(answered_question_ids)
+    # Get unanswered questions by excluding already answered ones
+    unanswered_questions = descriptive_questions.exclude(id__in=answered_question_ids)
+    serializer = QuestionSerializer(unanswered_questions, many=True)
+    return Response(serializer.data)
 
-            for response in responses:
-                question = response.question
-
-                # Fetch descriptive answers and single-answer questions
-                if question.answer_type in ["descriptive", "single"]:
-                    pending_evaluations.append({
-                        "attempt_id": attempt.id,
-                        "student_name": attempt.student.username,
-                        "student_email": attempt.student.email,
-                        "question_id": question.id,
-                        "question_text": question.text,
-                        "answer_type": question.answer_type,
-                        "student_answer": response.descriptive_answer if question.answer_type == "descriptive" else list(response.selected_choices.values_list("text", flat=True)),
-                        "correct_answer": list(Answer.objects.filter(question=question, is_correct=True).values_list("text", flat=True)) if question.answer_type == "single" else "Manual Grading Required",
-                        "is_correct": None if question.answer_type == "descriptive" else set(response.selected_choices.values_list("id", flat=True)) == set(Answer.objects.filter(question=question, is_correct=True).values_list("id", flat=True))
-                    })
-
-        return Response({"pending_evaluations": pending_evaluations}, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def evaluate_answers(request):
+def evaluate_descriptive_answers(request):
     """
-    API to submit marks for descriptive answers.
+    Allows teachers to manually grade descriptive answers.
     """
     try:
-        evaluations = request.data.get("evaluations", [])
+        evaluations = request.data.get("evaluations", [])  # Expecting a list of evaluations
 
         for evaluation in evaluations:
-            attempt = get_object_or_404(TestAttempt, id=evaluation["attempt_id"])
-            response = get_object_or_404(StudentResponse, attempt=attempt, question_id=evaluation["question_id"])
+            response = get_object_or_404(StudentResponse, id=evaluation["response_id"])
 
-            # Store marks for descriptive answers
-            if response.question.answer_type == "descriptive":
+            # Ensure only descriptive answers are updated
+            if response.question.question_type in ["descriptive", "short_answer", "survey"]:
                 response.marks_awarded = evaluation["marks_awarded"]
                 response.save()
 
-            # Update test result if necessary
-            attempt_result, _ = StudentTestResult.objects.get_or_create(attempt=attempt)
-            total_marks = sum([resp.question.points for resp in attempt.responses.all()])
-            total_score = sum([resp.marks_awarded for resp in attempt.responses.all() if resp.marks_awarded is not None])
+                # Recalculate total score for the attempt
+                attempt = response.attempt
+                total_score, total_marks = attempt.calculate_score()
 
-            attempt_result.score = total_score
-            attempt_result.total_marks = total_marks
-            attempt_result.percentage = (total_score / total_marks) * 100 if total_marks > 0 else 0
-            attempt_result.save()
+                # Update test result
+                attempt_result, _ = StudentTestResult.objects.get_or_create(attempt=attempt)
+                attempt_result.score = total_score
+                attempt_result.total_marks = total_marks
+                attempt_result.percentage = (total_score / total_marks) * 100 if total_marks > 0 else 0
+                attempt_result.save()
 
         return Response({"message": "Evaluations submitted successfully!"}, status=status.HTTP_200_OK)
 

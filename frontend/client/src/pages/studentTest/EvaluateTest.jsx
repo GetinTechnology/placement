@@ -12,12 +12,11 @@ const EvaluateTest = ({ testId }) => {
 
   const fetchPendingEvaluations = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/portal/pending-evaluations/${testId}/`, {
+      const response = await fetch(`http://127.0.0.1:8000/portal/tests/descriptive-responses/${testId}/ `, {
         headers: {
-          Authorization: `Token ${localStorage.getItem("authToken")}`,
+          Authorization: `Token ${localStorage.getItem("studentToken")}`,
         },
       });
-
       if (!response.ok) {
         throw new Error("Failed to fetch evaluations");
       }
@@ -68,7 +67,7 @@ const EvaluateTest = ({ testId }) => {
 
   if (loading) return <p>Loading evaluations...</p>;
   if (error) return <p className="text-red-600">{error}</p>;
-  if (evaluations.length === 0) return <p>No pending evaluations.</p>;
+  // if (evaluations.length === 0) return <p>No pending evaluations.</p>;
 
   return (
     <div className="p-4">
@@ -87,7 +86,7 @@ const EvaluateTest = ({ testId }) => {
             </tr>
           </thead>
           <tbody>
-            {evaluations.map((evaluation, index) => (
+            {/* {evaluations.map((evaluation, index) => (
               <tr key={index} className="hover:bg-gray-100">
                 <td className="border p-2">{evaluation.student_name}</td>
                 <td className="border p-2">{evaluation.student_email}</td>
@@ -106,7 +105,7 @@ const EvaluateTest = ({ testId }) => {
                   />
                 </td>
               </tr>
-            ))}
+            ))} */}
           </tbody>
         </table>
       </div>

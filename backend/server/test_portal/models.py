@@ -96,9 +96,11 @@ class StudentResponse(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     selected_choices = models.ManyToManyField(Answer, blank=True)
     descriptive_answer = models.TextField(blank=True, null=True)
+    marks_awarded = models.FloatField(blank=True, null=True)  # Add this field
 
     def __str__(self):
         return f"{self.attempt.student.email} - {self.question.text}"
+
 
 class StudentTestResult(models.Model):
     attempt = models.OneToOneField(TestAttempt, on_delete=models.CASCADE, related_name="result")
