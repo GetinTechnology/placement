@@ -48,13 +48,17 @@
     justify-content: space-between;
     align-items: center;
 }
-.t-top button{
+.t-top .portal-btn{
     background-color: red;
     border: none;
     padding: 10px;
     border-radius: 10px;
     font-size: 14px;
     font-weight: 700;
+    width: 100px;
+}
+.t-top .portal-btn>a{
+    color: #fff;
 }
 .filter{
     background-color: #fff !important;
@@ -75,6 +79,7 @@
     margin-top:10px ;
     position: relative;
 }
+
 .t-box:hover{
     box-shadow: 0 0 10px 10px rgba(128, 128, 128, 0.155);
 }
@@ -87,6 +92,13 @@
     position: absolute;
     left: 0;
     border-radius: 10px;
+}
+
+.t-btn{
+    width: 200PX;
+    color: red;
+    border: none !important;
+
 }
 .t-box1,.t-box1>div{
     display: flex;

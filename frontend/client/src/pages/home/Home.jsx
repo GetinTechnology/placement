@@ -22,6 +22,7 @@ import Gallary from './Gallary'
 import Jobs from './Jobs'
 import Review from './Review'
 import Footer from '../../components/Footer'
+import Header from '../../components/Header'
 
 const traingcourse = [
   {

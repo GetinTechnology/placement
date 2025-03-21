@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { verifyResetCode } from "../../api";
 import { useLocation, useNavigate } from "react-router-dom";
+import "./register.css";
 
 function VerifyReset() {
   const [code, setCode] = useState("");
@@ -10,21 +11,44 @@ function VerifyReset() {
   const email = location.state?.email;
 
   const handleVerifyCode = async () => {
+    if (!code) {
+      setMessage("❌ Please enter the verification code.");
+      return;
+    }
+
     try {
-      const response = await verifyResetCode(email, code);
-      setMessage(response.message);
-      setTimeout(() => navigate("/reset-password", { state: { email } }), 3000);
+      await verifyResetCode(email, code);
+      setMessage("✅ Code verified successfully! Redirecting...");
+      setTimeout(() => navigate("/reset-password", { state: { email } }), 2000);
     } catch (error) {
-      setMessage(error.response?.data?.error || "Invalid code.");
+      setMessage("❌ Invalid code. Please try again.");
     }
   };
 
   return (
-    <div>
-      <h2>Enter Verification Code</h2>
-      <input type="text" onChange={(e) => setCode(e.target.value)} />
-      <button onClick={handleVerifyCode}>Verify</button>
-      {message && <p>{message}</p>}
+    <div className="verify-reset-wrapper">
+      <div className="verify-reset-card">
+        <h2>Verify Your Code</h2>
+        <p className="subtitle">Enter the verification code sent to your email.</p>
+
+        <div className="input-group">
+          <label>Verification Code</label>
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Enter verification code"
+            required
+          />
+        </div>
+
+        <button className="verify-reset-btn" onClick={handleVerifyCode}>
+          Verify Code
+        </button>
+
+        {/* Message Box */}
+        {message && <p className="message-box">{message}</p>}
+      </div>
     </div>
   );
 }

@@ -1,0 +1,154 @@
+.register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .register-box {
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 350px;
+  }
+  
+  .register-box h2 {
+    color: #ff0000;
+  }
+  
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    margin-top: 15px;
+  }
+  
+  .input-group label {
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .input-group input {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+  }
+  
+  .terms {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 10px 0;
+    font-size: 12px;
+    width: 100%;
+  }
+  .terms label{
+    flex: 3;
+  }
+  
+  .terms input {
+    margin-right: 10px;
+    flex: 1;
+  }
+  
+  .register-btn {
+    background: #ff0000;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .register-btn:hover {
+    background: #5e1b1b;
+  }
+  
+  .signin-redirect {
+    margin-top: 15px;
+    font-size: 14px;
+  }
+  
+  .signin-redirect a {
+    color: #6943ff;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  
+
+  /* Background styling */
+
+
+/* Centered container */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Card-style login form */
+.login-card {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  width: 350px;
+}
+
+/* Heading */
+h2 {
+  color: #d32f2f;
+  margin-bottom: 5px;
+}
+
+/* p {
+  color: #666;
+  font-size: 14px;
+} */
+
+/* Input fields */
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0!important;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: 0.3s;
+}
+
+input:focus {
+  border-color: #1976d2;
+  outline: none;
+}
+
+/* Login button */
+button {
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  padding: 12px;
+  width: 100%;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background-color: #b71c1c;
+}
+
+/* Error or Success Message */
+.message {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #d32f2f;
+}

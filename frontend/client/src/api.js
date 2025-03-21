@@ -22,7 +22,7 @@ export const forgotPassword = (email) =>
     axios.post(`http://127.0.0.1:8000/auth/verify_reset_code/`, { email, code }).then((res) => res.data);
   
   export const resetPassword = (email, newPassword) =>
-    axios.post(`${API_URL}/reset-password/`, { email, new_password: newPassword }).then((res) => res.data);
+    axios.post(`http://127.0.0.1:8000/auth/reset_password/`, { email, new_password: newPassword }).then((res) => res.data);
 
 
 export const loginStudent = async (email,password) => {

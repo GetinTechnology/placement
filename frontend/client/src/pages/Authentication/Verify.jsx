@@ -1,61 +1,65 @@
 import { useState } from "react";
 import { verifyCode } from "../../api";
 import { useNavigate } from "react-router-dom";
-import { Popper } from "@mui/base/Popper";
-import { styled } from "@mui/system";
+import "./register.css";
 
-const PopperMessage = styled("div")({
-    background: "#333",
-    color: "#fff",
-    padding: "10px",
-    borderRadius: "5px",
-    fontSize: "14px",
-    boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
-    transform: "translateY(-200px)",
-    backgroundColor: "red",
-  });
-  
 const Verify = () => {
-    const [email, setEmail] = useState("");
-    const [code, setCode] = useState("");
-    const [message, setMessage] = useState("");
-    const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [message, setMessage] = useState("");
+  const navigate = useNavigate();
 
-    const handleVerify = async () => {
-        try {
-           const response =  await verifyCode(email, code);
-           if (response.data.token) {
-            localStorage.setItem("authToken", response.data.token);
-            setMessage("Verification successful! Redirecting...");
-            setTimeout(() => navigate("/login"), 2000);
-           }
-          
-        } catch (error) {
-            setMessage("Invalid code. Try again.");
-        }
-    };
+  const handleVerify = async () => {
+    if (!email || !code) {
+      setMessage("❌ Email and verification code are required.");
+      return;
+    }
 
-    return (
-        <div>
-            <div className="top">
-                <h2>GetinTestPortal</h2>
-            </div>
-            <div className="regform">
-            <div className="reg">
-            <h2>Verify Account</h2>
-            <div className="regform-input">
-            <input type="email" placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
-            <input type="text" placeholder="Verification Code" onChange={(e) => setCode(e.target.value)} />
-            <button onClick={handleVerify}>Verify</button>
-            </div>
+    try {
+      const response = await verifyCode(email, code);
+      if (response.data.token) {
+        localStorage.setItem("authToken", response.data.token);
+        setMessage("✅ Verification successful! Redirecting...");
+        setTimeout(() => navigate("/login"), 2000);
+      }
+    } catch (error) {
+      setMessage("❌ Invalid verification code. Please try again.");
+    }
+  };
 
-          
-            </div>
+  return (
+    <div className="verify-wrapper">
+      <div className="verify-card">
+        <h2>GetinTestPortal</h2>
+        <p className="subtitle">Enter your email and verification code.</p>
 
-            </div>
+        <div className="input-group">
+          <label>Email Address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+          />
 
+          <label>Verification Code</label>
+          <input
+            type="text"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Enter your code"
+            required
+          />
         </div>
-    );
+
+        <button className="verify-btn" onClick={handleVerify}>Verify</button>
+
+        {/* Message Display */}
+        {message && <p className="message-box">{message}</p>}
+      </div>
+    </div>
+  );
 };
 
 export default Verify;

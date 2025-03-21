@@ -1,90 +1,67 @@
 import { useState } from "react";
 import { login } from "../../api";
 import { Link, useNavigate } from "react-router-dom";
-import { Popper } from "@mui/base/Popper";
-import { styled } from "@mui/system";
-
-const PopperMessage = styled("div")({
-  background: "#333",
-  color: "#fff",
-  padding: "10px",
-  borderRadius: "5px",
-  fontSize: "14px",
-  boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
-  transform: "translateY(-200px)",
-  backgroundColor: "red",
-});
+import "./register.css";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogin = async (event) => {
-    setAnchorEl(event.currentTarget); // Show Popper
-
+  const handleLogin = async () => {
     if (!email || !password) {
-        setMessage("Email and Password are required.");
-        setTimeout(() => setAnchorEl(null), 3000);
-        return;
+      setMessage("❌ Email and Password are required.");
+      return;
     }
 
     try {
-        const response = await login(email, password);
-          if(response){
-            localStorage.setItem("authToken", response.data.token);
-            setMessage("login Succuessfull ");
-                setTimeout(() => {
-                    setAnchorEl(null);
-                    navigate("/portal");
-                }, 2000);
-          }
+      const response = await login(email, password);
+      if (response) {
+        localStorage.setItem("authToken", response.data.token);
+        setMessage("✅ Login Successful! Redirecting...");
+        setTimeout(() => navigate("/portal"), 2000);
+      }
     } catch (error) {
-        console.error("Login Error:", error);
-        setMessage("Login failed. Please check your credentials.");
-        setTimeout(() => setAnchorEl(null), 3000);
+      console.error("Login Error:", error);
+      setMessage("❌ Login failed. Please check your credentials.");
     }
-};
+  };
 
   return (
-    <div>
-      <div className="top">
+    <div className="login-wrapper">
+      <div className="login-card">
         <h2>GetinTestPortal</h2>
-      </div>
-      <div className="regform">
-        <div className="reg">
-          <h2>Sign In</h2>
-          <div className="regform-input">
-            <label>Email address</label>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+        <p className="subtitle">Welcome back! Please sign in to continue.</p>
 
-            <label>Password</label>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+        <div className="input-group">
+          <label>Email Address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+          />
 
-            <button onClick={handleLogin}>Login</button>
+          <label>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+          />
+        </div>
 
-            {/* Popper Message */}
-            <Popper open={Boolean(anchorEl)} anchorEl={anchorEl} placement="top">
-              <PopperMessage>{message}</PopperMessage>
-            </Popper>
-          </div>
-          <hr />
-          <div className="regbottom">
-            <button onClick={() => navigate("/register")}>Signup</button>
-            <p><Link to='/forgot_password'>Forgot password?</Link></p>
-          </div>
+        <button className="login-btn" onClick={handleLogin}>Login</button>
+
+        {/* Message Display */}
+        {message && <p className="message-box">{message}</p>}
+
+        <div className="extra-links">
+          <p><Link to="/forgot_password">Forgot password?</Link></p>
+          <p>New here? <Link to="/register">Create an account</Link></p>
         </div>
       </div>
     </div>

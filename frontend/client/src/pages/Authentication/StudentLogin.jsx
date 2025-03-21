@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { loginStudent } from "../../api";
 import axios from "axios";
+import "./studentregister.css"; 
+import Header from "../../components/Header";
 
 const StudentLogin = () => {
   const [email, setEmail] = useState("");
@@ -10,24 +11,47 @@ const StudentLogin = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://127.0.0.1:8000/auth/student_login/',{email,password});
+      const response = await axios.post("http://127.0.0.1:8000/auth/student_login/", {
+        email,
+        password,
+      });
+
       localStorage.setItem("studentToken", response.data.token);
-      setMessage("Login successful!");
+      setMessage(" Login successful!");
     } catch (error) {
-      setMessage("Invalid credentials.");
+      setMessage(error.response?.data?.error || "Registration failed. Try again.");
     }
   };
 
   return (
-    <div>
-      <h2>Student Login</h2>
-      <form onSubmit={handleLogin}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">Login</button>
-      </form>
-      <p>{message}</p>
+    <>
+    <Header/>
+        <div className="login-container">
+      <div className="login-card">
+        <h2>Student Login</h2>
+        <p>Access your test</p>
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
+        <p className="message">{message}</p>
+      </div>
     </div>
+    </>
+  
   );
 };
 

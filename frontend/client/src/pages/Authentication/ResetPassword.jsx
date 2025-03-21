@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { resetPassword } from "../../api";
 import { useLocation, useNavigate } from "react-router-dom";
+import "./register.css";
 
 function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
@@ -10,21 +11,44 @@ function ResetPassword() {
   const email = location.state?.email;
 
   const handleResetPassword = async () => {
+    if (!newPassword) {
+      setMessage("❌ Please enter a new password.");
+      return;
+    }
+
     try {
-      const response = await resetPassword(email, newPassword);
-      setMessage(response.message);
-      setTimeout(() => navigate("/login"), 3000);
+      await resetPassword(email, newPassword);
+      setMessage("✅ Password reset successfully! Redirecting to login...");
+      setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
-      setMessage(error.response?.data?.error || "Failed to reset password.");
+      setMessage("❌ Failed to reset password. Try again.");
     }
   };
 
   return (
-    <div>
-      <h2>Reset Password</h2>
-      <input type="password" onChange={(e) => setNewPassword(e.target.value)} />
-      <button onClick={handleResetPassword}>Reset Password</button>
-      {message && <p>{message}</p>}
+    <div className="reset-password-wrapper">
+      <div className="reset-password-card">
+        <h2>Reset Your Password</h2>
+        <p className="subtitle">Enter your new password below.</p>
+
+        <div className="input-group">
+          <label>New Password</label>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Enter new password"
+            required
+          />
+        </div>
+
+        <button className="reset-password-btn" onClick={handleResetPassword}>
+          Reset Password
+        </button>
+
+        {/* Message Box */}
+        {message && <p className="message-box">{message}</p>}
+      </div>
     </div>
   );
 }

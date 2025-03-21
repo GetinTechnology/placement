@@ -2,92 +2,76 @@ import { useState } from "react";
 import { register } from "../../api"; // API call
 import { useNavigate } from "react-router-dom";
 import "./register.css";
-import { Popper } from "@mui/base/Popper";
-import { styled } from "@mui/system";
-
-const PopperMessage = styled("div")({
-  background: "#333",
-  color: "#fff",
-  padding: "10px",
-  borderRadius: "5px",
-  fontSize: "14px",
-  boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
-  transform: "translateY(-200px)",
-  backgroundColor: "red",
-});
 
 function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [checkbox, setCheckbox] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
   const navigate = useNavigate();
 
-  const handleRegister = async (event) => {
+  const handleRegister = async () => {
     if (!checkbox) {
-      setMessage("You must agree to the Terms & Conditions to register.");
-      setAnchorEl(event.currentTarget);
-      setTimeout(() => setAnchorEl(null), 3000);
+      setMessage("❌ You must agree to the Terms & Conditions to register.");
       return;
     }
 
     try {
-      const response = await register(email, password);
+      await register(email, password);
 
-      // ✅ Registration successful - Navigate to verify screen
-      setMessage("Registration successful! Please verify your email.");
-      setAnchorEl(event.currentTarget);
+      setMessage("✅ Registration successful! Redirecting...");
       setTimeout(() => {
-        setAnchorEl(null);
-        navigate("/verify", { state: { email } }); // Pass email to verify page
+        navigate("/verify", { state: { email } });
       }, 3000);
     } catch (error) {
-      // ✅ Show meaningful error messages
-      setMessage(error.response?.data?.error || "Registration failed. Try again.");
-      setAnchorEl(event.currentTarget);
-      setTimeout(() => setAnchorEl(null), 3000);
+      setMessage(error.response?.data?.error || "❌ Registration failed. Try again.");
     }
   };
 
   return (
-    <div>
-      <div className="top">
+    <div className="register-wrapper">
+      <div className="register-card">
         <h2>GetinTestPortal</h2>
-      </div>
-      <div className="regform">
-        <div className="reg">
-          <h2>Register</h2>
-          <p>Easy way to register</p>
-          <div className="regform-input">
-            <label>Email address</label>
-            <input type="email" onChange={(e) => setEmail(e.target.value)} />
+        <p className="subtitle">Create an account to start your journey!</p>
 
-            <label>Password</label>
-            <input type="password" onChange={(e) => setPassword(e.target.value)} />
+        <div className="input-group">
+          <label>Email Address</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+          />
 
-            <div className="regcheck">
-              <input
-                type="checkbox"
-                checked={checkbox}
-                onChange={(e) => setCheckbox(e.target.checked)}
-              />
-              <label>
-                By signing up, I agree to Terms & Conditions and Privacy Policy.
-              </label>
-            </div>
-
-            <button onClick={handleRegister}>Signup</button>
-
-            {/* Popper Message */}
-            <Popper open={Boolean(anchorEl)} anchorEl={anchorEl} placement="top">
-              <PopperMessage>{message}</PopperMessage>
-            </Popper>
-          </div>
+          <label>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter a strong password"
+            required
+          />
         </div>
-        <div className="reg2">
-          <h3>Here to take a test?</h3>
-          <p>No need to sign up. If you sign up, please sign in.</p>
+
+        <div className="checkbox-group">
+          <input
+            type="checkbox"
+            checked={checkbox}
+            onChange={(e) => setCheckbox(e.target.checked)}
+          />
+          <label>
+            I agree to the <a href="#">Terms & Conditions</a> and <a href="#">Privacy Policy</a>.
+          </label>
+        </div>
+
+        <button className="register-btn" onClick={handleRegister}>Sign Up</button>
+
+        {/* Message Display */}
+        {message && <p className="message-box">{message}</p>}
+
+        <div className="login-redirect">
+          <p>Already have an account? <a href="/login">Sign In</a></p>
         </div>
       </div>
     </div>

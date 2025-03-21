@@ -142,7 +142,7 @@ def get_test_status(request, test_id):
         serializer = TestActiveSerializer(test_active)
         return Response(serializer.data, status=status.HTTP_200_OK)
     except TestActive.DoesNotExist:
-        return Response({"is_active": False}, status=status.HTTP_200_OK)
+        return Response({"test":test_id,"is_active": False}, status=status.HTTP_200_OK)
 
 
 

@@ -34,7 +34,7 @@ function App() {
                     <Route path="/newtest" element={<NewTest/>}/>
                     <Route path="/csv" element={<CSVUpload/>}/>
                     <Route path="/register" element={<Register />} />
-                    <Route path="/login" element={<Login />} />
+                    <Route path="/admin" element={<Login />} />
                     <Route path="/verify" element={<Verify />} />
                     <Route path='/register_student' element={<StudentRegister/>}/>
                     <Route path='/login_student' element={<StudentLogin/>}/>
