@@ -167,7 +167,7 @@ const QuestionManager = ({ onAddQuestion }) => {
         </Form.Group>
 
         {newQuestion.question_type !== "descriptive" &&
-          newQuestion.question_type !== "short_answer" && (
+        newQuestion.question_type !== "short_answer" && (
             <div className="mt-3">
               <h5>Answers</h5>
               {newQuestion.answers.map((answer, index) => (

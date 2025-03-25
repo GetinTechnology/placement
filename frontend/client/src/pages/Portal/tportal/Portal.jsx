@@ -16,7 +16,7 @@ function Portal() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [teststatus, setTestStatus] = useState([])
-
+  const [testavg,setTestAvg] = useState([])
   useEffect(() => {
     const fetchTests = async () => {
       try {
@@ -83,7 +83,6 @@ function Portal() {
     fetchTestStatus();
   }, [tests]);
 
-  console.log(teststatus)
 
 
   useEffect(() => {
@@ -127,6 +126,55 @@ function Portal() {
     setSearchQuery(e.target.value);
   };
 
+  useEffect(() => {
+    fetchResults();
+  }, []);
+
+  const fetchResults = async () => {
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/portal/test/test_result`, {
+        headers: {
+          Authorization: `Token ${localStorage.getItem("authToken")}`,
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to fetch results");
+      }
+  
+      const data = await response.json();
+      const results = data.results; // Extract results array
+      console.log("Fetched Results:", results);
+  
+      // Group results by test name and calculate total results and average score
+      const testStats = results.reduce((acc, result) => {
+        const { test_name, score, total_marks } = result;
+  
+        if (!acc[test_name]) {
+          acc[test_name] = { totalResults: 0, totalScore: 0, totalMarks: 0 };
+        }
+  
+        acc[test_name].totalResults += 1;
+        acc[test_name].totalScore += score;
+        acc[test_name].totalMarks += total_marks;
+  
+        return acc;
+      }, {});
+  
+      // Calculate average scores
+      const testAverages = Object.entries(testStats).map(([testName, stats]) => ({
+        testName,
+        totalResults: stats.totalResults,
+        avgScore: (stats.totalScore / stats.totalMarks * 100).toFixed(2), // Convert to percentage
+      }));
+  
+      console.log("Test Averages:", testAverages);
+      setTestAvg(testAverages)
+      return testAverages; // Return or set state if needed
+    } catch (error) {
+      console.error("Error fetching test results:", error);
+    }
+  };
   return (
     <div className="portal">
       <div className={`menu ${isCollapsed ? "collapsed" : ""}`}>
@@ -172,30 +220,36 @@ function Portal() {
 
           <Row>
             {filteredTests.length > 0 ? (
-              filteredTests.map((test) => (
+             filteredTests.map((test) => {
+              const status = teststatus.find((status) => status.test === test.id);
+              const testStats = testavg.find((stats) => stats.testName === test.name);
+            
+              return (
                 <Col key={test.id} lg={6}>
                   <Link to={`/configuration/${test.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="t-box">
                       <div className="t-box1">
                         <button className='t-btn'>
-                          {teststatus.find((status) => status.test === test.id)?.is_active ? "Active" : "In Progress"}
+                          {status?.is_active ? "Active" : "In Progress"}
                         </button>                        
                         <p>Created: {new Date(test.created_at).toLocaleDateString()}</p>
-                        <p onClick={handleDelete}>delete</p>
+                        <p onClick={() => handleDelete(test.id)}>Delete</p>
                       </div>
                       <div className="t-box2">
                         <h2>{test.name}</h2>
                         <p>{test.description}</p>
                       </div>
                       <div className="t-box3">
-                        <span>{test.average_score || "-"}% avg. score</span>
-                        <span>Result ({test.result_count || 0})</span>
+                        <span>{testStats ? `${testStats.avgScore}% avg. score` : "-% avg. score"}</span>
+                        <span>Result ({testStats ? testStats.totalResults : 0})</span>
                         <button className='t-btn'>{test.category_name || "Uncategorized"}</button>
                       </div>
                     </div>
                   </Link>
                 </Col>
-              ))
+              );
+            })
+            
             ) : (
               <p>No tests found.</p>
             )}
