@@ -442,7 +442,7 @@ def submit_test(request, test_id):
         submitted_answers = request.data.get("responses", [])  # Expecting a list of answer dictionaries
         print(submitted_answers)
 
-        score = 0
+        auto_score = 0
         total_marks = 0
 
         for answer in submitted_answers:
@@ -452,13 +452,15 @@ def submit_test(request, test_id):
 
             question = get_object_or_404(Question, id=question_id)
 
-            # Retrieve correct answer(s)
+            # Retrieve correct answer(s) for auto-graded questions
             correct_answer_ids = set(
                 Answer.objects.filter(question=question, is_correct=True).values_list("id", flat=True)
             )
 
             # Create a response object
-            response = StudentResponse.objects.create(attempt=attempt, question=question)
+            response, created = StudentResponse.objects.get_or_create(
+                attempt=attempt, question=question
+            )
 
             if question.question_type in ["single_choice", "true_false"]:
                 # Store the selected choice
@@ -466,7 +468,7 @@ def submit_test(request, test_id):
 
                 # Validate if the selected choice matches the correct answer
                 if set(selected_choice_ids) == correct_answer_ids:
-                    score += question.points
+                    auto_score += question.points  # Add points if correct
 
                 total_marks += question.points
 
@@ -474,9 +476,9 @@ def submit_test(request, test_id):
                 # Store selected choices
                 response.selected_choices.set(selected_choice_ids)
 
-                # Score based on correct selection
+                # Score based on correct selection (Full points only if all correct answers are selected)
                 if set(selected_choice_ids) == correct_answer_ids:
-                    score += question.points  # Full points only if all correct answers are selected
+                    auto_score += question.points  
 
                 total_marks += question.points
 
@@ -488,11 +490,16 @@ def submit_test(request, test_id):
 
                 total_marks += question.points  # Marks will be awarded after review
 
-        # Save initial result without descriptive answers
+        # Save result with only auto-graded questions (Descriptive excluded)
         total_marks = max(total_marks, 1)  # Avoid division by zero
         result, created = StudentTestResult.objects.update_or_create(
             attempt=attempt,
-            defaults={"score": score, "total_marks": total_marks, "percentage": (score / total_marks) * 100},
+            defaults={
+                "score": auto_score,  # Only auto-scored questions counted
+                "total_marks": total_marks,  
+                "percentage": (auto_score / total_marks) * 100,  
+                "manual_grading_pending": True,  # Flag to indicate manual grading needed
+            },
         )
 
         attempt.submitted = True
@@ -501,9 +508,10 @@ def submit_test(request, test_id):
         return Response(
             {
                 "message": "Test submitted successfully! Descriptive answers need manual grading.",
-                "score": result.score,
+                "auto_score": result.score,  # Shows only auto-graded score
                 "total_marks": result.total_marks,
                 "percentage": result.percentage,
+                "manual_grading_pending": True,  # Notify frontend that manual grading is needed
             },
             status=status.HTTP_200_OK,
         )
@@ -511,6 +519,7 @@ def submit_test(request, test_id):
     except Exception as e:
         print(f"Error: {str(e)}")  # Debugging Line
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 

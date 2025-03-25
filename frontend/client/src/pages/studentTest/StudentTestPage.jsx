@@ -73,26 +73,26 @@ const StudentTestPage = () => {
     }
   }, [testId, isActive]);
 
-const handleChange = (questionId, value, isMultiple = false) => {
-  setResponses((prev) => {
-    if (isMultiple) {
-      const newValues = prev[questionId].includes(value)
-        ? prev[questionId].filter((v) => v !== value)
-        : [...prev[questionId], value];
-      return { ...prev, [questionId]: newValues };
-    } else if (typeof prev[questionId] === "string") {
-      // If it's a descriptive answer, store as a string
+  const handleChange = (questionId, value, isMultiple = false) => {
+    setResponses((prev) => {
+      if (isMultiple) {
+        const newValues = prev[questionId].includes(value)
+          ? prev[questionId].filter((v) => v !== value)
+          : [...prev[questionId], value];
+        return { ...prev, [questionId]: newValues };
+      } else if (typeof prev[questionId] === "string") {
+        // If it's a descriptive answer, store as a string
+        return { ...prev, [questionId]: value };
+      }
       return { ...prev, [questionId]: value };
-    }
-    return { ...prev, [questionId]: value };
-  });
-};
+    });
+  };
 
   const handleSubmit = async () => {
     try {
       const formattedResponses = Object.keys(responses).map((questionId) => {
         const question = test.questions.find((q) => q.id === parseInt(questionId));
-  
+      
         return {
           question_id: parseInt(questionId),
           selected_choices:
@@ -105,15 +105,15 @@ const handleChange = (questionId, value, isMultiple = false) => {
             question.question_type === "descriptive"
               ? responses[questionId] // Store answer as a string
               : "",
-        };
+        }
       });
-  
-      console.log("Submitting Responses:", JSON.stringify(formattedResponses, null, 2)); 
-  
+
+      console.log("Submitting Responses:", JSON.stringify(formattedResponses, null, 2));
+
       await submitTestAnswers(testId, formattedResponses, token);
       setSubmitted(true);
       setShowToast(true);
-  
+
       setTimeout(() => {
         navigate(`/result/${testId}`);
       }, 3000);
@@ -122,7 +122,7 @@ const handleChange = (questionId, value, isMultiple = false) => {
       alert(error.response?.data?.message || "Failed to submit test");
     }
   };
-  
+
   console.log(isActive)
 
   if (!isActive) {
@@ -201,6 +201,7 @@ const handleChange = (questionId, value, isMultiple = false) => {
                   placeholder="Type your answer here..."
                 />
               )}
+
             </div>
           ))}
 
