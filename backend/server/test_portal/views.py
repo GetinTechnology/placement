@@ -553,13 +553,16 @@ def get_student_result(request, test_id):
 
         result = attempt.result
         responses = StudentResponse.objects.filter(attempt=attempt)
-
+        for response in responses:
+            print(response.descriptive_answer)
         answer_details = [
             {
                 "question_id": response.question.id,
                 "question_text": response.question.text,
+                "question_type":response.question.question_type,
                 "student_answer": list(
-                    response.selected_choices.values_list("text", flat=True)
+                    response.selected_choices.values_list("text", flat=True) or response.descriptive_answer
+        
                 ),
                 "correct_answer": list(
                     Answer.objects.filter(

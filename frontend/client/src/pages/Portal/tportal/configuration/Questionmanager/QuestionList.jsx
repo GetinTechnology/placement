@@ -85,18 +85,21 @@ const QuestionList = ({ onBack }) => {
                     </div>
                    
                     <p className="">{question.text}</p>
-                 
-                    {question.answers.map((answer) => (
-                      <div key={answer.id} className="ans-box-q">
-                        {/* <input type="radio" name={`question-${question.id}`} id={`answer-${answer.id}`} /> */}
-                        <label
-                          htmlFor={`answer-${answer.id}`}
-                          className={answer.is_correct ? "ans-box-a-bc" : "ans-box-a"}
-                        >
-                          {answer.text}
-                        </label>
-                      </div>
-                    ))}
+                    {question.question_type !== "descriptive" &&
+        question.question_type !== "short_answer" &&(
+          question.answers.map((answer) => (
+            <div key={answer.id} className="ans-box-q">
+              {/* <input type="radio" name={`question-${question.id}`} id={`answer-${answer.id}`} /> */}
+              <label
+                htmlFor={`answer-${answer.id}`}
+                className={answer.is_correct ? "ans-box-a-bc" : "ans-box-a"}
+              >
+                {answer.text}
+              </label>
+            </div>
+          ))
+        )}
+                
 
                   </div>
                 </div>

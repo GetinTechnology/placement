@@ -156,8 +156,9 @@ const QuestionManager = ({ onAddQuestion }) => {
             <option value="survey">Survey</option>
           </Form.Select>
         </Form.Group>
-
-        <Form.Group>
+        {newQuestion.question_type !== "descriptive" &&
+        newQuestion.question_type !== "short_answer" &&(
+          <Form.Group>
           <Form.Label>Points</Form.Label>
           <Form.Control
             type="number"
@@ -165,6 +166,8 @@ const QuestionManager = ({ onAddQuestion }) => {
             onChange={(e) => handleInputChange("points", Number(e.target.value))}
           />
         </Form.Group>
+
+        )}
 
         {newQuestion.question_type !== "descriptive" &&
         newQuestion.question_type !== "short_answer" && (

@@ -108,6 +108,7 @@ class StudentTestResult(models.Model):
     total_marks = models.FloatField(default=0)
     percentage = models.FloatField(default=0)
     submitted_at = models.DateTimeField(auto_now_add=True)
+    manual_grading_pending = models.BooleanField(default=False)  # Add this field
 
     def calculate_percentage(self):
         return (self.score / self.total_marks) * 100
