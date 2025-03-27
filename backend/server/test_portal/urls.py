@@ -23,7 +23,7 @@ urlpatterns = [
     path('test/<int:test_id>/test-set/', views.create_test_set, name='create-test-set'),
     path('test/<int:test_id>/all_results',views.get_all_students_results,name='get_all_students_results'),
     path('test/test_result',views.get_test_results,name='get_test_results'),
-    path("tests/descriptive-responses/<int:test_id>/", views.get_unanswered_descriptive_responses, name="descriptive-responses"),
-    path('evaluate-answers/',views.evaluate_descriptive_answers,name='evaluate_answers')
+    path("test/<int:test_id>/descriptive/", views.manage_descriptive_responses, name="manage_descriptive_responses"),
+
      
 ]

@@ -233,3 +233,8 @@ def student_login(request):
         else:
             return Response({"error": "Not a student"}, status=403)  # Use 403 for permission denied
     return Response({"error": "Invalid credentials"}, status=401)
+
+
+
+
+

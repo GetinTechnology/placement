@@ -122,3 +122,22 @@ export const createTestSet = async (testId, orderType, questionsPerPage,token) =
   }
 };
 
+
+
+// Fetch all descriptive questions & responses
+export const fetchDescriptiveQuestions = async (testId, token) => {
+  const response = await axios.get(`http://127.0.0.1:8000/portal/test/${testId}/descriptive/`, {
+    headers: { Authorization: `Token ${token}` },
+  });
+  return response.data;
+};
+
+// Submit marks for grading
+export const submitMarks = async (testId, responses, token) => {
+  const response = await axios.post(
+    `http://127.0.0.1:8000/portal/test/${testId}/descriptive/`,
+    { responses },
+    { headers: { Authorization: `Token ${token}` } }
+  );
+  return response.data;
+};

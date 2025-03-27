@@ -19,6 +19,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny
 from django.core.exceptions import ValidationError
 import logging
+from django.db.models import Sum
 
 logger = logging.getLogger(__name__)
 
@@ -440,7 +441,6 @@ def submit_test(request, test_id):
 
         # Get submitted answers from request
         submitted_answers = request.data.get("responses", [])  # Expecting a list of answer dictionaries
-        print(submitted_answers)
 
         auto_score = 0
         total_marks = 0
@@ -489,7 +489,7 @@ def submit_test(request, test_id):
                 response.save()
 
                 total_marks += question.points  # Marks will be awarded after review
-
+                
         # Save result with only auto-graded questions (Descriptive excluded)
         total_marks = max(total_marks, 1)  # Avoid division by zero
         result, created = StudentTestResult.objects.update_or_create(
@@ -553,38 +553,51 @@ def get_student_result(request, test_id):
 
         result = attempt.result
         responses = StudentResponse.objects.filter(attempt=attempt)
-        for response in responses:
-            print(response.descriptive_answer)
-        answer_details = [
-            {
-                "question_id": response.question.id,
-                "question_text": response.question.text,
-                "question_type":response.question.question_type,
-                "student_answer": list(
-                    response.selected_choices.values_list("text", flat=True) or response.descriptive_answer
-        
-                ),
-                "correct_answer": list(
-                    Answer.objects.filter(
-                        question=response.question, is_correct=True
-                    ).values_list("text", flat=True)
-                ),
-                "is_correct": set(
-                    response.selected_choices.values_list("id", flat=True)
-                )
-                == set(
-                    Answer.objects.filter(
-                        question=response.question, is_correct=True
-                    ).values_list("id", flat=True)
-                ),
-            }
-            for response in responses
-        ]
 
+        answer_details = []
+        for response in responses:
+            question = response.question
+            if question.question_type in ["descriptive", "short_answer", "survey"]:
+                # Handle descriptive-type questions
+                answer_details.append({
+                    "question_id": question.id,
+                    "question_text": question.text,
+                    "question_type": question.question_type,
+                    "student_answer": response.descriptive_answer,  # Store descriptive answer directly
+                    "correct_answer": None,  # No predefined correct answer
+                    "marks_awarded": response.marks_awarded,  # Show the awarded marks
+                })
+               
+            else:
+                # Handle objective-type questions (MCQ, True/False)
+                correct_answers = set(Answer.objects.filter(
+                    question=question, is_correct=True
+                ).values_list("id", flat=True))
+
+                selected_answers = set(response.selected_choices.values_list("id", flat=True))
+
+                answer_details.append({
+                    "question_id": question.id,
+                    "question_text": question.text,
+                    "question_type": question.question_type,
+                    "student_answer": list(
+                        response.selected_choices.values_list("text", flat=True)
+                    ),
+                    "correct_answer": list(
+                        Answer.objects.filter(
+                            question=question, is_correct=True
+                        ).values_list("text", flat=True)
+                    ),
+                    "is_correct": selected_answers == correct_answers,  # Compare sets
+                })
+        
+        def calculatescore(answer_details):
+            if question.question_type in ["descriptive", "short_answer", "survey"]:
+                pass
         return Response(
             {
                 "test_name": attempt.test.name,
-                "student":attempt.student.email,
+                "student": attempt.student.email,
                 "score": result.score,
                 "total_marks": result.total_marks,
                 "percentage": result.percentage,
@@ -596,6 +609,7 @@ def get_student_result(request, test_id):
 
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 @api_view(['POST'])
@@ -707,6 +721,7 @@ def get_test_results(request):
                 "total_marks": result.total_marks,
                 "percentage": result.percentage,
                 "submitted_at": result.submitted_at,
+                "manual_grading_pending":result.manual_grading_pending
             }
             for result in results
         ]
@@ -720,65 +735,56 @@ def get_test_results(request):
 
 
 
-@api_view(['GET'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def get_unanswered_descriptive_responses(request, test_id):
-    user = request.user  # Get the logged-in student
-
-    # Check if the student has an active attempt for this test
-    try:
-        attempt = TestAttempt.objects.get(test_id=test_id, student=user)
-        
-    except TestAttempt.DoesNotExist:
-        return Response({"error": "No test attempt found for this student."}, status=404)
-
-    # Get all descriptive questions in the test
-    descriptive_questions = Question.objects.filter(test_id=test_id, question_type="descriptive")
-    print(descriptive_questions)
-    answered_question_ids = StudentResponse.objects.filter(
-        attempt=attempt,
-        question__question_type="descriptive"
-    ).values_list("question_id", flat=True)
-    print(answered_question_ids)
-    # Get unanswered questions by excluding already answered ones
-    unanswered_questions = descriptive_questions.exclude(id__in=answered_question_ids)
-    serializer = QuestionSerializer(unanswered_questions, many=True)
-    return Response(serializer.data)
 
 
+def update_test_score(attempt):
+    """
+    Recalculate and update the student's test score after grading.
+    """
+    # ✅ Sum up all marks awarded (including descriptive questions)
+    total_score = StudentResponse.objects.filter(attempt=attempt).aggregate(
+        total_score=Sum("marks_awarded")
+    )["total_score"] or 0
+
+    # ✅ Get total possible marks
+    total_marks = Question.objects.filter(test=attempt.test).aggregate(
+        total_marks=Sum("points")
+    )["total_marks"] or 0
+
+    # ✅ Calculate percentage
+    percentage = (total_score / total_marks * 100) if total_marks > 0 else 0
+
+    # ✅ Update the test result
+    StudentTestResult.objects.filter(attempt=attempt).update(
+        score=total_score, 
+        percentage=percentage
+    )
 
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def evaluate_descriptive_answers(request):
+def manage_descriptive_responses(request, test_id):
     """
-    Allows teachers to manually grade descriptive answers.
+    POST: Grade descriptive answers by assigning scores.
     """
-    try:
-        evaluations = request.data.get("evaluations", [])  # Expecting a list of evaluations
+    test = get_object_or_404(Test, id=test_id)
+    responses_data = request.data.get("responses", [])
 
-        for evaluation in evaluations:
-            response = get_object_or_404(StudentResponse, id=evaluation["response_id"])
+    for response_data in responses_data:
+        response_id = response_data.get("response_id")
+        marks_awarded = response_data.get("marks_awarded")
 
-            # Ensure only descriptive answers are updated
-            if response.question.question_type in ["descriptive", "short_answer", "survey"]:
-                response.marks_awarded = evaluation["marks_awarded"]
-                response.save()
+        response = get_object_or_404(StudentResponse, id=response_id)
 
-                # Recalculate total score for the attempt
-                attempt = response.attempt
-                total_score, total_marks = attempt.calculate_score()
+        if marks_awarded > response.question.points:
+            return Response(
+                {"error": f"Marks cannot exceed {response.question.points} for question {response.question.text}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-                # Update test result
-                attempt_result, _ = StudentTestResult.objects.get_or_create(attempt=attempt)
-                attempt_result.score = total_score
-                attempt_result.total_marks = total_marks
-                attempt_result.percentage = (total_score / total_marks) * 100 if total_marks > 0 else 0
-                attempt_result.save()
+        response.marks_awarded = marks_awarded
+        response.save()
 
-        return Response({"message": "Evaluations submitted successfully!"}, status=status.HTTP_200_OK)
+        update_test_score(response.attempt)
 
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    return Response({"message": "Marks updated and test score recalculated!"}, status=status.HTTP_200_OK)

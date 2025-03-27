@@ -115,3 +115,11 @@ class TestSetSerializer(serializers.ModelSerializer):
 
 
 
+class DescriptiveQuestionSerializer(serializers.ModelSerializer):
+    student = serializers.CharField(source="attempt.student.username", read_only=True)
+    question_text = serializers.CharField(source="question.text", read_only=True)
+    max_marks = serializers.IntegerField(source="question.points", read_only=True)
+
+    class Meta:
+        model = StudentResponse
+        fields = ["id", "student", "question_text", "descriptive_answer", "marks_awarded", "max_marks"]
