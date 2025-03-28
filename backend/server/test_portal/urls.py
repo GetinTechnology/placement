@@ -6,6 +6,7 @@ urlpatterns = [
     path('updatetest/<int:test_id>', views.test, name='update'),
     path('delete/<int:test_id>',views.delete_test,name='delete'),
     path('category/',views.add_category,name='category'),
+    path('modeify_category/<int:category_id>',views.category_update_delete,name='modeify _category'),
     path("test/<int:test_id>/questions/add", views.add_question, name="add_question"),
     path("test/<int:test_id>/questions", views.get_questions, name="get_questions"),
     path("question/<int:question_id>/answers/add", views.add_answer, name="add_answer"),

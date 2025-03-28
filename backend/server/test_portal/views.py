@@ -29,25 +29,51 @@ logger = logging.getLogger(__name__)
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def add_category(request):
-    if request.method == 'GET':  # ✅ Handle GET request
-        categories = Category.objects.all()
+    if request.method == 'GET':  #Fetch all categories
+        categories = Category.objects.filter(created_by=request.user)
         serializer = CategorySerializer(categories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    if request.method == 'POST':  # ✅ Handle POST request
+    elif request.method == 'POST':  # Add new category
         category_name = request.data.get('name', '').strip()
 
         if not category_name:
             return Response({'error': 'Category name is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if Category.objects.filter(name__iexact=category_name).exists():
-            return Response({'error': 'Category already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+        if Category.objects.filter(name__iexact=category_name, created_by=request.user).exists():
+            return Response({'error': 'You already created this category.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        category = Category.objects.create(name=category_name)
+        category = Category.objects.create(name=category_name, created_by=request.user)  # Assign user
         serializer = CategorySerializer(category)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+@api_view(['PUT', 'DELETE'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def category_update_delete(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
 
+    #Only allow the creator to update/delete (except admin)
+    if category.created_by != request.user and not request.user.is_superuser:
+        return Response({'error': 'You do not have permission to modify this category.'}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == 'PUT':  #Update category
+        new_name = request.data.get('name', '').strip()
+
+        if not new_name:
+            return Response({'error': 'Category name is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if Category.objects.filter(name__iexact=new_name).exclude(id=category_id).exists():
+            return Response({'error': 'Category with this name already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        category.name = new_name
+        category.save()
+        serializer = CategorySerializer(category)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    elif request.method == 'DELETE':  #Delete category
+        category.delete()
+        return Response({'message': 'Category deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET', 'POST', 'PUT'])
 @authentication_classes([TokenAuthentication])
@@ -536,79 +562,8 @@ def check_submission_status(request, test_id):
     return Response({"submitted": attempt.submitted if attempt else False}, status=200)
 
 
-@api_view(["GET"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def get_student_result(request, test_id):
-    """
-    Fetch the student's test result using test ID.
-    """
-    try:
-        attempt = get_object_or_404(TestAttempt, test_id=test_id, student=request.user)
 
-        if not hasattr(attempt, "result"):
-            return Response(
-                {"message": "Test result not found"}, status=status.HTTP_404_NOT_FOUND
-            )
 
-        result = attempt.result
-        responses = StudentResponse.objects.filter(attempt=attempt)
-
-        answer_details = []
-        for response in responses:
-            question = response.question
-            if question.question_type in ["descriptive", "short_answer", "survey"]:
-                # Handle descriptive-type questions
-                answer_details.append({
-                    "question_id": question.id,
-                    "question_text": question.text,
-                    "question_type": question.question_type,
-                    "student_answer": response.descriptive_answer,  # Store descriptive answer directly
-                    "correct_answer": None,  # No predefined correct answer
-                    "marks_awarded": response.marks_awarded,  # Show the awarded marks
-                })
-               
-            else:
-                # Handle objective-type questions (MCQ, True/False)
-                correct_answers = set(Answer.objects.filter(
-                    question=question, is_correct=True
-                ).values_list("id", flat=True))
-
-                selected_answers = set(response.selected_choices.values_list("id", flat=True))
-
-                answer_details.append({
-                    "question_id": question.id,
-                    "question_text": question.text,
-                    "question_type": question.question_type,
-                    "student_answer": list(
-                        response.selected_choices.values_list("text", flat=True)
-                    ),
-                    "correct_answer": list(
-                        Answer.objects.filter(
-                            question=question, is_correct=True
-                        ).values_list("text", flat=True)
-                    ),
-                    "is_correct": selected_answers == correct_answers,  # Compare sets
-                })
-        
-        def calculatescore(answer_details):
-            if question.question_type in ["descriptive", "short_answer", "survey"]:
-                pass
-        return Response(
-            {
-                "test_name": attempt.test.name,
-                "student": attempt.student.email,
-                "score": result.score,
-                "total_marks": result.total_marks,
-                "percentage": result.percentage,
-                "submitted_at": result.submitted_at,
-                "answers": answer_details,
-            },
-            status=status.HTTP_200_OK,
-        )
-
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
@@ -737,54 +692,198 @@ def get_test_results(request):
 
 
 
-def update_test_score(attempt):
-    """
-    Recalculate and update the student's test score after grading.
-    """
-    # ✅ Sum up all marks awarded (including descriptive questions)
-    total_score = StudentResponse.objects.filter(attempt=attempt).aggregate(
-        total_score=Sum("marks_awarded")
-    )["total_score"] or 0
-
-    # ✅ Get total possible marks
-    total_marks = Question.objects.filter(test=attempt.test).aggregate(
-        total_marks=Sum("points")
-    )["total_marks"] or 0
-
-    # ✅ Calculate percentage
-    percentage = (total_score / total_marks * 100) if total_marks > 0 else 0
-
-    # ✅ Update the test result
-    StudentTestResult.objects.filter(attempt=attempt).update(
-        score=total_score, 
-        percentage=percentage
-    )
-
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def manage_descriptive_responses(request, test_id):
     """
-    POST: Grade descriptive answers by assigning scores.
+    GET: Retrieve descriptive responses awaiting review.
+    POST: Update student results after grading.
     """
     test = get_object_or_404(Test, id=test_id)
-    responses_data = request.data.get("responses", [])
 
-    for response_data in responses_data:
-        response_id = response_data.get("response_id")
-        marks_awarded = response_data.get("marks_awarded")
+    if request.method == "GET":
+        # Fetch all descriptive questions
+        descriptive_questions = Question.objects.filter(
+            test=test, question_type__in=["descriptive", "short_answer", "survey"]
+        )
 
-        response = get_object_or_404(StudentResponse, id=response_id)
+        # Fetch responses related to these questions
+        responses = StudentResponse.objects.filter(question__in=descriptive_questions)
 
-        if marks_awarded > response.question.points:
-            return Response(
-                {"error": f"Marks cannot exceed {response.question.points} for question {response.question.text}"},
-                status=status.HTTP_400_BAD_REQUEST,
+        # Check if any response is ungraded
+        ungraded_responses = responses.filter(marks_awarded=None).exists()
+        
+      
+
+        # Serialize data
+        data = [
+            {
+                "response_id": response.id,
+                "student": response.attempt.student.email,
+                "question": response.question.text,
+                "descriptive_answer": response.descriptive_answer,
+                "marks_awarded": response.marks_awarded,
+                "max_marks": response.question.points,
+            }
+            for response in responses
+        ]
+
+        return Response(
+            {
+                "status": "waiting for review" if ungraded_responses else "graded",
+                "responses": data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    elif request.method == "POST":
+        """
+        ✅ Update the student result score after grading
+        
+        """
+        responses_data = request.data.get("responses", [])
+
+        for response_data in responses_data:
+            response_id = response_data.get("response_id")
+            marks_awarded = response_data.get("marks_awarded")
+
+            response = get_object_or_404(StudentResponse, id=response_id)
+            
+            if response.marks_awarded is not None:
+                return Response(
+                    {"error": f"Marks already awarded for response {response_id}."},
+                    status=status.HTTP_400_BAD_REQUEST,
             )
 
-        response.marks_awarded = marks_awarded
-        response.save()
+            if marks_awarded > response.question.points:
+                return Response(
+                    {"error": f"Marks cannot exceed {response.question.points} for question {response.question.text}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        update_test_score(response.attempt)
+            # ✅ Assign marks
+            response.marks_awarded = marks_awarded
+            response.save()
+        test_attempts = TestAttempt.objects.filter(test=test)
 
-    return Response({"message": "Marks updated and test score recalculated!"}, status=status.HTTP_200_OK)
+        for attempt in test_attempts:
+            update_test_score(attempt)  # Recalculate test score for each student
+
+        return Response({"message": "Student results updated successfully!"}, status=status.HTTP_200_OK)
+
+
+def update_test_score(attempt):
+    """
+    ✅ Update the student's test score by adding newly graded descriptive answers.
+    """
+    # Fetch the current student test result
+    student_result, created = StudentTestResult.objects.get_or_create(attempt=attempt)
+
+    # Get the existing MCQ score
+    existing_score = student_result.score or 0
+
+    # Calculate total descriptive score (newly graded responses)
+    descriptive_score = StudentResponse.objects.filter(
+        attempt=attempt, 
+        question__question_type__in=["descriptive", "short_answer", "survey"]
+    ).aggregate(total_score=Sum("marks_awarded"))["total_score"] or 0
+
+    # Update the total score by adding descriptive answers
+    student_result.score = existing_score + descriptive_score
+
+    # Recalculate total marks (including all question types)
+    total_marks = Question.objects.filter(test=attempt.test).aggregate(
+        total_marks=Sum("points")
+    )["total_marks"] or 0
+
+    # Recalculate percentage
+    student_result.percentage = (student_result.score / total_marks * 100) if total_marks > 0 else 0
+
+    # Save the updated result
+    student_result.save()
+
+    print(f"Updated Result: Score={student_result.score}, Percentage={student_result.percentage}")
+
+
+
+
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_student_result(request, test_id):
+    """
+    Fetch the student's test result using test ID.
+    If descriptive questions are ungraded, return "waiting for review".
+    """
+    try:
+        attempt = get_object_or_404(TestAttempt, test_id=test_id, student=request.user)
+
+        if not hasattr(attempt, "result"):
+            return Response(
+                {"message": "Test result not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        result = attempt.result
+        responses = StudentResponse.objects.filter(attempt=attempt)
+
+        # Check if any descriptive response is ungraded
+        ungraded_responses = responses.filter(
+            question__question_type__in=["descriptive", "short_answer", "survey"],
+            marks_awarded=None
+        ).exists()
+
+        answer_details = []
+        for response in responses:
+            question = response.question
+            if question.question_type in ["descriptive", "short_answer", "survey"]:
+                # Handle descriptive-type questions
+                answer_details.append({
+                    "question_id": question.id,
+                    "question_text": question.text,
+                    "question_type": question.question_type,
+                    "student_answer": response.descriptive_answer,
+                    "correct_answer": None,
+                    "marks_awarded": response.marks_awarded,
+                })
+            else:
+                # Handle objective-type questions (MCQ, True/False)
+                correct_answers = set(Answer.objects.filter(
+                    question=question, is_correct=True
+                ).values_list("id", flat=True))
+
+                selected_answers = set(response.selected_choices.values_list("id", flat=True))
+
+                answer_details.append({
+                    "question_id": question.id,
+                    "question_text": question.text,
+                    "question_type": question.question_type,
+                    "student_answer": list(
+                        response.selected_choices.values_list("text", flat=True)
+                    ),
+                    "correct_answer": list(
+                        Answer.objects.filter(
+                            question=question, is_correct=True
+                        ).values_list("text", flat=True)
+                    ),
+                    "is_correct": selected_answers == correct_answers,
+                })
+        
+        return Response(
+            {
+                "test_name": attempt.test.name,
+                "student": attempt.student.email,
+                "status": "waiting for review" if ungraded_responses else "graded",
+                "score": result.score if not ungraded_responses else None,
+                "total_marks": result.total_marks,
+                "percentage": result.percentage if not ungraded_responses else None,
+                "submitted_at": result.submitted_at,
+                "answers": answer_details,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

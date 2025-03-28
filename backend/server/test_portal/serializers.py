@@ -4,6 +4,8 @@ from .models import *
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    created_by = serializers.ReadOnlyField(source='created_by.username')  # Return creator's username
+
     class Meta:
         model = Category
         fields = '__all__'

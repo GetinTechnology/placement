@@ -9,7 +9,9 @@ import random
 User = get_user_model()
 
 class Category(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)  
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE,null=True)  
+    created_at = models.DateTimeField(default=now)
 
 class Test(models.Model):
     name = models.CharField(max_length=255)
@@ -62,6 +64,8 @@ class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers")
     text = models.CharField(max_length=255,blank=True)
     is_correct = models.BooleanField(default=False)
+    
+
 
 class TestAttempt(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -83,7 +87,7 @@ class TestAttempt(models.Model):
             selected_answers = set(response.selected_choices.values_list("id", flat=True))
 
             if correct_answers == selected_answers:
-                total_score += question.points  # Assign points only if the answer is correct
+                total_score += question.points  #points only if the answer is correct
         
             total_marks += question.points  # Sum total possible marks
 
@@ -96,7 +100,7 @@ class StudentResponse(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     selected_choices = models.ManyToManyField(Answer, blank=True)
     descriptive_answer = models.TextField(blank=True, null=True)
-    marks_awarded = models.FloatField(blank=True, null=True)  # Add this field
+    marks_awarded = models.FloatField(blank=True, null=True)  
 
     def __str__(self):
         return f"{self.attempt.student.email} - {self.question.text}"
@@ -108,7 +112,7 @@ class StudentTestResult(models.Model):
     total_marks = models.FloatField(default=0)
     percentage = models.FloatField(default=0)
     submitted_at = models.DateTimeField(auto_now_add=True)
-    manual_grading_pending = models.BooleanField(default=False)  # Add this field
+    manual_grading_pending = models.BooleanField(default=False)  
 
     def calculate_percentage(self):
         return (self.score / self.total_marks) * 100

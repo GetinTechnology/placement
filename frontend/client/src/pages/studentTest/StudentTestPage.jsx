@@ -92,7 +92,7 @@ const StudentTestPage = () => {
     try {
       const formattedResponses = Object.keys(responses).map((questionId) => {
         const question = test.questions.find((q) => q.id === parseInt(questionId));
-      
+  
         return {
           question_id: parseInt(questionId),
           selected_choices:
@@ -100,20 +100,20 @@ const StudentTestPage = () => {
               ? responses[questionId] // Keep array for multiple choice
               : question.question_type === "single_choice"
               ? [responses[questionId]] // Wrap single choice in an array
-              : [], // Empty array for descriptive
+              : [], // Empty array for descriptive, short_answer, and survey
           descriptive_answer:
-            question.question_type === "descriptive"
-              ? responses[questionId] // Store answer as a string
+            ["descriptive", "short_answer", "survey"].includes(question.question_type)
+              ? responses[questionId]
               : "",
-        }
+        };
       });
-
+  
       console.log("Submitting Responses:", JSON.stringify(formattedResponses, null, 2));
-
+  
       await submitTestAnswers(testId, formattedResponses, token);
       setSubmitted(true);
       setShowToast(true);
-
+  
       setTimeout(() => {
         navigate(`/result/${testId}`);
       }, 3000);
@@ -194,6 +194,14 @@ const StudentTestPage = () => {
                 ))}
 
               {question.question_type === "descriptive" && (
+                <textarea
+                  className="form-control"
+                  value={responses[question.id]}
+                  onChange={(e) => handleChange(question.id, e.target.value)}
+                  placeholder="Type your answer here..."
+                />
+              )}
+                      {question.question_type === "short_answer" && (
                 <textarea
                   className="form-control"
                   value={responses[question.id]}

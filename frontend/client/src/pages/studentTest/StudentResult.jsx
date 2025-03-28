@@ -31,16 +31,18 @@ const StudentResult = () => {
   if (loading) return <p className="text-center text-gray-500">Loading...</p>;
   if (error) return <p className="text-center text-red-500">{error}</p>;
 
-  // Check if any descriptive answers are still ungraded
-  const pendingGrading = result.answers.some(item => item.question_type === "descriptive" && item.score === 0);
-  console.log(pendingGrading)
+  // Check if the test is still under review
+  const isWaitingForReview = result.status === "waiting for review";
+
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg mt-6">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
         Test Results: {result.test_name}
       </h2>
-      {pendingGrading ? (
-        <p className="text-lg text-yellow-600 text-center">Some descriptive answers are pending evaluation. Your final score will be available once they are graded.</p>
+      {isWaitingForReview ? (
+        <p className="text-lg text-yellow-600 text-center">
+          ⏳ Your test is currently under review. Please wait for the final result after the descriptive answers are graded.
+        </p>
       ) : (
         <div className="text-center mb-4">
           <p className="text-lg font-semibold">Score: {result.score} / {result.total_marks}</p>
@@ -57,7 +59,7 @@ const StudentResult = () => {
             <p className="text-sm text-gray-600">
               <strong>Your Answer:</strong> {item.student_answer.length > 0 ? item.student_answer : "No Answer"}
             </p>
-            {item.question_type !== "descriptive" ? (
+            {item.question_type !== "descriptive" && item.question_type !== "short_answer" ? (
               <>
                 <p className="text-sm text-green-600">
                   <strong>Correct Answer:</strong> {item.correct_answer.join(", ")}
@@ -68,7 +70,7 @@ const StudentResult = () => {
               </>
             ) : (
               <p className="text-sm text-blue-600">
-                <strong>Points Awarded:</strong> {item.points !== null ? item.points : "Pending"}
+                <strong>Points Awarded:</strong> {item.marks_awarded !== null ? item.marks_awarded : "Pending"}
               </p>
             )}
           </div>

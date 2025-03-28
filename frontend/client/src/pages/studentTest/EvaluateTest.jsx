@@ -3,9 +3,10 @@ import { fetchDescriptiveQuestions, submitMarks } from "../../api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const DescriptiveGrading = ({ testId, token }) => {
+const DescriptiveGrading = ({ testId }) => {
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState({}); // Tracks individual submission status
 
   useEffect(() => {
     loadResponses();
@@ -13,29 +14,40 @@ const DescriptiveGrading = ({ testId, token }) => {
 
   const loadResponses = async () => {
     try {
-      const token = localStorage.getItem('authToken')
+      const token = localStorage.getItem("authToken");
       const data = await fetchDescriptiveQuestions(testId, token);
-      setResponses(data);
+      setResponses(data.responses);
     } catch (error) {
       toast.error("Failed to fetch questions.");
     } finally {
       setLoading(false);
     }
   };
-
   const handleMarkChange = (index, marks) => {
-    const updatedResponses = [...responses];
-    updatedResponses[index].marks_awarded = marks;
-    setResponses(updatedResponses);
+    setResponses((prev) => {
+      const updatedResponses = [...prev];
+      updatedResponses[index].marks_awarded = marks;
+      return updatedResponses;
+    });
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (index) => {
+    const response = responses[index];
+    if (!response.marks_awarded && response.marks_awarded !== 0) {
+      toast.error("Please enter marks before submitting.");
+      return;
+    }
+
+    setSubmitting((prev) => ({ ...prev, [response.response_id]: true }));
+
     try {
-      const token = localStorage.getItem('authToken')
-      await submitMarks(testId, responses, token);
+      const token = localStorage.getItem("authToken");
+      await submitMarks(testId, [response], token); // Send only one response
       toast.success("Marks submitted successfully!");
     } catch (error) {
-      toast.error("Error submitting marks.");
+      toast.error(error.response.data.error);
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [response.response_id]: false }));
     }
   };
 
@@ -66,17 +78,16 @@ const DescriptiveGrading = ({ testId, token }) => {
                   onChange={(e) => handleMarkChange(index, Number(e.target.value))}
                 />
               </div>
+              <button
+                className="btn btn-success mt-3"
+                onClick={() => handleSubmit(index)}
+                disabled={submitting[resp.response_id]}
+              >
+                {submitting[resp.response_id] ? "Submitting..." : "Submit Marks"}
+              </button>
             </div>
           </div>
         ))
-      )}
-
-      {responses.length > 0 && (
-        <div className="text-center">
-          <button className="btn btn-primary mt-3" onClick={handleSubmit}>
-            Submit Marks
-          </button>
-        </div>
       )}
     </div>
   );
