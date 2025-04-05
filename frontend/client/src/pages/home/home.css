@@ -111,14 +111,17 @@ li{
     align-items: center;
     position: relative;
  }
+ .m-home{
+   padding-left: 4rem;
+ }
  .home-content{
     display: flex;
     align-items:start;
     justify-content: center;
     flex-direction: column;
     height: 500px;
-    width: 500px;
- 
+    max-width: 500px;
+   
     color: #fff;
  }
  .home-image>img{
@@ -275,7 +278,8 @@ li{
 
 .top-course{
     margin-top: 2rem;
-}
+
+   }
 .auth-col{
    display: flex;
    justify-content: center;
@@ -531,3 +535,151 @@ li{
    width: 200px;
    height: 200px;
 }
+
+.auth-col-btn{
+   display:none;
+   background: none;
+   color: #fff;
+   border: none;
+
+}
+@media (max-width:1050px) {
+   .auth-col-li{
+      display: none !important;
+   }
+   .auth-col-btn{
+      display: block;
+   }
+}
+
+/* Default styles (desktop and larger screens) */
+.home-banner {
+   padding-left: 4rem;
+ }
+ 
+ .top-course .cardrow {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 20px;
+ }
+ 
+ .Coursecard {
+   width: 100%;
+ }
+ 
+ .auth-col {
+   display: flex;
+   align-items: center;
+   justify-content: flex-end;
+ }
+ 
+ .auth-col-li {
+   display: flex;
+   gap: 10px;
+ }
+ 
+ .auth-col-btn {
+   background: #ff9a8b;
+   border: none;
+   border-radius: 5px;
+   cursor: pointer;
+ }
+ 
+ .content-details ul {
+   list-style: none;
+   padding: 0;
+ }
+ 
+ /* Mobile styles */
+ @media (max-width: 768px) {
+   .home-banner {
+     padding-left: 1rem;
+   }
+ 
+   .home-content h1 {
+     font-size: 1.5rem;
+     text-align: left;
+   }
+   .m-home{
+      padding: 0;
+      
+   }
+   
+   .home-content p {
+     font-size: 1rem;
+     text-align:left;
+   }
+ 
+   .top-course .cardrow {
+     flex-direction: column;
+     gap: 15px;
+   }
+ 
+   .auth-col {
+     justify-content: center;
+     margin-top: 10px;
+   }
+ 
+   .auth-col-li {
+     flex-direction: column;
+     align-items: center;
+   }
+ 
+   .auth-col-btn {
+     margin-top: 10px;
+   }
+ 
+   .content-details ul {
+     padding-left: 20px;
+   }
+ }
+ 
+ /* Tablet styles */
+ @media (max-width: 1024px) {
+   .home-banner {
+     padding-left: 2rem;
+   }
+ 
+   .home-content h1 {
+     font-size: 1.8rem;
+   }
+ 
+   .home-content p {
+     font-size: 1.1rem;
+   }
+ 
+   .top-course .cardrow {
+     flex-wrap: wrap;
+     justify-content: center;
+     gap: 20px;
+   }
+ 
+   .auth-col {
+     justify-content: flex-start;
+   }
+ }
+ 
+ /* Extra small screens (portrait phones) */
+ @media (max-width: 480px) {
+   .home-content h1 {
+     font-size: 1.4rem;
+   }
+ 
+   .home-content p {
+     font-size: 0.9rem;
+   }
+ 
+   .Coursecard {
+     margin-bottom: 20px;
+   }
+ 
+   .top-course .cardrow {
+     flex-direction: column;
+   }
+ 
+   .auth-col-btn {
+     font-size: 14px;
+     padding: 8px 12px;
+   }
+ }
+ 

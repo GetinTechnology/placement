@@ -130,7 +130,7 @@ input:focus {
 }
 
 /* Login button */
-button {
+.register-btn{
   background-color: #d32f2f;
   color: white;
   border: none;

@@ -23,7 +23,7 @@ import Jobs from './Jobs'
 import Review from './Review'
 import Footer from '../../components/Footer'
 import Header from '../../components/Header'
-
+import LoginIcon from '@mui/icons-material/Login';
 const traingcourse = [
   {
     "img": python,
@@ -172,7 +172,7 @@ function Home() {
       <header className={visible ? 'header-bg' : 'header'}>
         <Container>
           <Row>
-            <Col lg={10}>
+            <Col lg={10} sm={6}>
               <Link to='/' className='link-top'>
                 <img src={logo} alt="" />
                 <p className="ps">
@@ -186,12 +186,14 @@ function Home() {
               </Link>
 
             </Col>
-            <Col lg={2} style={{ display: 'flex', alignItems: 'center' }} className='auth-col'>
-              <ul>
+            <Col lg={2} sm={6} style={{ display: 'flex', alignItems: 'center' }} className='auth-col'>
+              <ul className='auth-col-li'>
                 <li ><Link to='/register_student'>Register</Link></li>
                 <li><Link to='/login_student'>Login</Link></li>
               </ul>
+              <button className='auth-col-btn'><LoginIcon/></button>
             </Col>
+          
           </Row>
 
 
@@ -199,7 +201,7 @@ function Home() {
 
       </header>
       <div className='home-banner'>
-        <div style={{ paddingLeft: '4rem' }} className='m-home t-home'>
+        <div  className='m-home t-home'>
           <Container>
             <Row id='banner-row'>
               <Col xl={6} sm={12} md={6}>
